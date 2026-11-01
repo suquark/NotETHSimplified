@@ -1,0 +1,10 @@
+This package contains source from OpenAI's math repository.
+Upstream: https://github.com/openai/math
+Pinned revision: 4eaee87548250b2682affda7d05d947c05554bae
+License: Apache License 2.0; the unmodified license text is in LICENSE.
+All source attribution and copyright notices have been retained.
+
+Four files have dated compatibility modification notices; the exact patch is
+in patches/lean-4.33.1.patch. UPSTREAM.json records original Git blob IDs and
+the SHA-256 of each local source file.
+No upstream ETH theorem or SAT counting algorithm is included.

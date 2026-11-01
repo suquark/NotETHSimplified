@@ -1,0 +1,87 @@
+--- upstream/OAI/Algorithms/SubexponentialSAT/BitProgramCompile.lean
++++ local/OAI/Algorithms/SubexponentialSAT/BitProgramCompile.lean
+@@ -1,3 +1,5 @@
++/- Local compatibility adaptation for Lean 4.33.1, 2026-10-29.
++   See patches/lean-4.33.1.patch; theorem statements and definitions are preserved. -/
+ import OAI.Algorithms.SubexponentialSAT.LeanCompat
+ import OAI.Algorithms.SubexponentialSAT.BitProgram
+ 
+@@ -86,7 +88,7 @@
+     (i : Instr r s l) (c : Cfg r s l) :
+     Turing.TM2.stepAux (compileInstr i) c.regs c.stacks = tmCfg p (execInstr i c) := by
+   cases i <;> simp [compileInstr, execInstr, tmCfg]
+-  all_goals first | rfl | (split <;> rfl)
++  all_goals first | rfl | (split <;> simp_all)
+ 
+ /-- A source instruction is exactly one finite TM2 block execution. -/
+ theorem tm_step {r s l : ℕ} (p : Program r s l) (c : Cfg r s l) :
+--- upstream/OAI/Algorithms/SubexponentialSAT/CounterPrograms.lean
++++ local/OAI/Algorithms/SubexponentialSAT/CounterPrograms.lean
+@@ -1,3 +1,5 @@
++/- Local compatibility adaptation for Lean 4.33.1, 2026-10-29.
++   See patches/lean-4.33.1.patch; theorem statements and definitions are preserved. -/
+ import OAI.Algorithms.SubexponentialSAT.LeanCompat
+ import OAI.Algorithms.SubexponentialSAT.ProgramLinking
+ import OAI.Algorithms.SubexponentialSAT.BinaryArithmetic
+@@ -234,8 +236,7 @@
+       have h := SubexponentialSAT.Computation.Trace.cons (ripple_step7_cons c b p z a xs ys)
+         (SubexponentialSAT.Computation.Trace.cons (ripple_step8 c a true z xs ys)
+           (SubexponentialSAT.Computation.Trace.cons (ripple_step9 c a true z xs ys) (ih a true (a :: xs))))
+-      convert h using 1
+-      simp [ List.reverse_cons, List.append_assoc]
++      convert h using 1 <;> simp [List.reverse_cons, List.append_assoc, Nat.mul_add]
+ 
+ /-- Exact instruction count, ending at the halt label before executing halt. -/
+ def rippleCost (c : Bool) : List Bool → ℕ
+@@ -443,8 +444,7 @@
+       have h := SubexponentialSAT.Computation.Trace.cons (zero_step6_cons b p z a xs ys)
+         (SubexponentialSAT.Computation.Trace.cons (zero_step7 a true z xs ys)
+           (SubexponentialSAT.Computation.Trace.cons (zero_step8 a true z xs ys) (ih a true (a :: xs))))
+-      convert h using 1
+-      simp [ List.reverse_cons, List.append_assoc]
++      convert h using 1 <;> simp [List.reverse_cons, List.append_assoc, Nat.mul_add]
+ 
+ /-- Exact trace through scan and restore, preserving every scanned data bit. -/
+ theorem zero_scan_trace (b p z : Bool) (xs ys : List Bool) :
+--- upstream/OAI/Algorithms/SubexponentialSAT/LeanCompat.lean
++++ local/OAI/Algorithms/SubexponentialSAT/LeanCompat.lean
+@@ -1,6 +1,21 @@
+-import Mathlib
++/- Local compatibility adaptation for Lean 4.33.1, 2026-10-29.
++   See patches/lean-4.33.1.patch; theorem statements and definitions are preserved. -/
++/- Modified locally on 2026-10-29: restrict imports for the isolated
++Lean 4.33.1 package; compatibility declarations below are unchanged. -/
++import Mathlib.Computability.TuringMachine.Computable
++import Mathlib.Computability.Partrec
++import Mathlib.Data.Nat.Log
++import Mathlib.Data.Nat.Prime.Infinite
++import Mathlib.Analysis.SpecialFunctions.Pow.Real
++import Mathlib.Tactic
+ 
+ universe u v
++
++-- Compatibility with the newer simplifier names used upstream.
++alias ite_eq_left := if_pos
++alias ite_eq_right := if_neg
++alias dite_eq_left := dif_pos
++alias dite_eq_right := dif_neg
+ 
+ /-!
+ Compatibility names for the Lean and Mathlib version used by this repository.
+--- upstream/OAI/Algorithms/SubexponentialSAT/WeightedSupport.lean
++++ local/OAI/Algorithms/SubexponentialSAT/WeightedSupport.lean
+@@ -1,3 +1,5 @@
++/- Local compatibility adaptation for Lean 4.33.1, 2026-10-29.
++   See patches/lean-4.33.1.patch; theorem statements and definitions are preserved. -/
+ import OAI.Algorithms.SubexponentialSAT.LeanCompat
+ 
+ namespace OAI.Algorithms
+@@ -209,7 +211,7 @@
+     (xTrunc N P).coeff a =
+       if a.sum (fun _ k => k) ≤ N then P.coeff a else 0 := by
+   classical
+-  simp [xTrunc, Finsupp.filter_apply]
++  simp [xTrunc, MvPolynomial.coeff, Finsupp.filter_apply]
+ 
+ @[simp] theorem xTrunc_zero (N : ℕ) : xTrunc N (0 : MvPolynomial ι R) = 0 := by
+   ext a

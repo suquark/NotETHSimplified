@@ -1,0 +1,335 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,microtype,booktabs,array,xcolor,graphicx}
+\usepackage[margin=1.1in]{geometry}
+\usepackage[font=small,labelfont=bf,skip=8pt]{caption}
+\usepackage{url}
+\makeatletter\g@addto@macro{\UrlBreaks}{\do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j\do\k\do\l\do\m\do\n\do\o\do\p\do\q\do\r\do\s\do\t\do\u\do\v\do\w\do\x\do\y\do\z\do\0\do\1\do\2\do\3\do\4\do\5\do\6\do\7\do\8\do\9\do\-}\makeatother
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=green!35!black,urlcolor=blue!50!black]{hyperref}
+\numberwithin{equation}{section}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\bits}{\{0,1\}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\T}{\mathbf{T}}
+\newcommand{\NN}{\mathcal{N}}
+\newcommand{\BB}{\mathcal{B}}
+\newcommand{\EE}{\mathcal{E}}
+\newcommand{\lean}[1]{\texttt{#1}}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.25}
+\hypersetup{pdftitle={One Pigeonhole for 3-SAT: A Determinant That Removes the Correction},pdfauthor={Siyuan Zhuang}}
+
+\title{One Pigeonhole for 3-SAT:\\A Determinant That Removes the Correction}
+\author{Siyuan Zhuang}
+\date{October 31, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+When parity is replaced by a low-degree polynomial, a low-rank correction appears, and proofs along this route must pay for it. We show that a determinant removes this correction, and we obtain a short proof that the Exponential Time Hypothesis fails: for each $\varepsilon>0$, 3-SAT with $n$ variables is decided deterministically in time $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$, where $|\varphi|$ is the size of the input. OpenAI and Claude (Anthropic) first announced this statement; our route is different. It has one pigeonhole in the decomposition, and no recursion beyond sparsification. The algorithm never factors the correction and enumerates no value on it: the proof bounds the dimension of its rows, and the algorithm evaluates one explicit formula.
+
+The identity is one line. If all rows of $A-D$ lie in a space of dimension at most $r$, then expanding $\det D=\det(A-(A-D))$ by rows stops after $r$ rows, because a determinant with more than $r$ rows in that space is $0$. Applied to the product of all equalities between the two copies of a bit, it replaces comparisons that flip all digits of a word by comparisons that flip few digits, in all but few rows. Then some digit is flipped by few rows, and the determinant factors across that digit once these rows are named. So the proof rests on two facts: parity is low-degree in commuting swaps except on few eigenvectors, and a determinant vanishes on dependent rows. For two wires and two digits the same matrices give the single-bit crossing identity recorded by Claude, where the low-rank term remains as one product. We also show that no such expansion can keep all its comparisons within fewer than $Q/2$ of the $Q$ digits. The theorem is formalized in Lean~4 down to a multitape machine, with its time and space, for a version of the algorithm whose program holds the small determinants in a table.
+\end{abstract}
+
+\section{The result and the strategy}\label{sec:overview}
+
+\begin{theorem}[3-SAT]\label{thm:sat}
+For each $\varepsilon>0$, 3-SAT with $n$ variables is decided deterministically in time $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$ and space $|\varphi|^{O_\varepsilon(1)}$, where $|\varphi|$ is the size of the input $\varphi$. On formulas with at most $\Delta$ occurrences per variable, the algorithm also computes the number of satisfying assignments, with constants that also depend on $\Delta$.
+\end{theorem}
+
+The Exponential Time Hypothesis of Impagliazzo and Paturi~\cite{IP01} says that for some $\delta>0$, no algorithm decides 3-SAT on $n$ variables in time $2^{\delta n}$ times a polynomial in the input size. Theorem~\ref{thm:sat} contradicts this: take $\varepsilon<\delta$. After duplicates are removed, the input has size polynomial in $n$.
+
+\subsection{Background and what is simplified}\label{sec:comparison}
+
+OpenAI~\cite{OAI26} and, independently, Claude (Anthropic)~\cite{Cla26} announced algorithms for counting with explicit subexponential rates. O'Donnell~\cite{OD26} and Kintali~\cite{Kin26} gave expositions of OpenAI's approach, and a community examination of the argument has been called for~\cite{ETHblog}. Like Kintali, we fix $\varepsilon$ and leave the rate unoptimized. We aim for a proof that is short to state and easy to follow.
+
+In the parity approach, each variable occurrence sits at a pair of words of $Q$ digits, and the two copies of its bit are compared across the transpose of the pair, which exchanges the letters in all digits. Call a comparison across an exchange of some of the digits a \emph{read}. The transpose is replaced by a low-degree polynomial in reads that flip few digits. The two differ by a matrix of low rank, which comes from the few common eigenvectors of the exchanges where the polynomial fails, and the proof must then treat this matrix, the correction. Table~\ref{tab:comparison} lists how. Here a truncated expansion of a determinant (Theorem~\ref{thm:trade}) removes the need to factor the correction: the formula keeps only determinants in which few rows come from the difference of the two matrices, and the algorithm enumerates no value on those eigenvectors. A pigeonhole on exponent vectors replaces Hermite recovery; its condition is the degree condition of Kintali's Hermite interpolation. Coefficients are still extracted, from polynomials with at most $(M+1)^Q$ monomials, where $M$ is the number of occurrences. No measurement, no color-count program, and no recursion on cliques or wires is used.
+
+\begin{table}[ht]
+\centering
+\small
+\resizebox{\textwidth}{!}{\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Work} & \textbf{The low-rank correction} & \textbf{Recovery of the value} \\
+\midrule
+OpenAI~\cite{OAI26}, main text & enumerate integer measurements & Hermite interpolation at nodes \\
+OpenAI~\cite{OAI26}, Appendix~D & modes between groups, recursion on wires & tapered Hermite recovery \\
+Kintali~\cite{Kin26} & enumerate integer measurements & Hermite interpolation at nodes \\
+O'Donnell~\cite{OD26} & dynamic program on color counts & Hermite interpolation at nodes \\
+Claude~\cite{Cla26} & no such matrix: crossings, recursion on cliques & sum over the recursion \\
+This paper & truncated expansion of a determinant & pigeonhole on exponents \\
+\bottomrule
+\end{tabular}}
+\caption{Where the proofs differ. For Appendix~D of~\cite{OAI26} we read the overview and the headings.}\label{tab:comparison}
+\end{table}
+
+The proof keeps the orthogonal characters of the cube and the parity interpolant applied to commuting swaps, from~\cite{OAI26}, after Alman and Williams~\cite{AW15,AW17}; the auxiliary coordinates and swaps that do not depend on the input formula, from~\cite{OAI26,Kin26}; and the picture of their orbits as cubes, and a labeling that differs in every digit, from~\cite{OD26}. These facts are used only to show that a set of rows has low dimension. The closest route is O'Donnell's. He writes a matrix polynomial whose value at each of several interpolation points is a block matrix plus the same low-rank $E$ (Theorem~5.1 and Eq.~(4.9) there), and he computes the permanent of such a matrix of order $n$ in time $2^{O(s)}n^{O(\operatorname{rank}E)}$ for blocks of size $s$, up to a polynomial factor (Lemma~2.1 there), with no measurements. He factors $E$ and interpolates at several points, and his route also gives a uniform rate for the sparse permanent. Our expansion is the determinant form of his addition formula (2.2), once a Laplace expansion collects the columns of the rows taken from $E$. What it adds is the vanishing: a determinant with too many rows in a small space is $0$, and a permanent is not. So no factorization of $E$ is needed. The sets $T$ of rows are what remains of the price, and they are enumerated. The expansion itself is one line from multilinearity. What we claim as new is its use here: we did not find it used this way in the works cited in Table~\ref{tab:comparison}, or in web searches on determinant expansions and low-rank perturbations.
+
+\subsection{The strategy}\label{sec:strategy}
+
+\emph{The obstacle.} Give each variable and each clause a word of $Q$ digits. A variable occurrence is a \emph{wire} that compares a bit at the word of the variable with a bit at the word of the clause. Group the words by digit $t$. The sum over assignments would split if no wire crossed the groups. But the word of a clause differs from the words of its variables in every digit, so each wire crosses the groups of every digit, and no fixed digit helps.
+
+\emph{Step 1: reads that flip few digits.} A wire lives on a \emph{cell}, a pair of words. Let $\tau_E$ exchange the letters of the two words in the digits of $E$, so a wire reads across all digits, by $\tau_{[Q]}$. A read with $t\notin E$ stays inside a group of digit $t$. A low-degree polynomial in the commuting swaps agrees with $\tau_{[Q]}$ except on few eigenvectors. So short reads differ from the wires by a low-rank error (Section~\ref{sec:window}). By Proposition~\ref{prop:exact} the error cannot be zero.
+
+\emph{Step 2: trading.} Put the wires into a diagonal matrix $D$, and the short reads into a matrix $A$. Then $\det D$ is the product of all wires, and the rows of $A-D$ have low dimension (Section~\ref{sec:trade}). The next identity removes the error.
+
+\begin{theorem}[Trading]\label{thm:trade}
+Let $D,A$ be $\nu\times\nu$ matrices over a field, with all rows of $A-D$ in a subspace of dimension at most $r$. For a set $T$ of rows, let $\langle T\rangle$ have the rows in $T$ from $A-D$ and the other rows from $A$. Then
+\[
+\det D=\sum_{|T|\le r}(-1)^{|T|}\det\langle T\rangle.
+\]
+\end{theorem}
+\begin{proof}
+Expand $\det D=\det(A-(A-D))$ by linearity in the rows. This gives the sum over all sets $T$. If $|T|>r$, then more than $r$ rows of $\langle T\rangle$ lie in a space of dimension at most $r$, so $\det\langle T\rangle=0$.
+\end{proof}
+
+So at most $r$ rows of a term contain a read that flips all digits; we call it a \emph{long} read.
+
+\emph{Step 3: one pigeonhole.} Attach a formal variable $z_i$ to digit $i$ of each read. A term has at most $M$ rows of degree at most $R$ and at most $r$ rows of degree $Q$. So its total degree is small, and some digit $t$ has a low exponent. Only few rows read across that digit (Section~\ref{sec:trade}).
+
+\emph{Step 4: the determinant across a digit.} Once the set $S$ of those rows is named, the determinant splits by the letter at digit $t$ (Section~\ref{sec:factor}). A row of $S$ reads the other group, except that its own bit $x_i$ is in the wrong one. Naming the values of those bits fixes this. Then the sum over assignments is a product of sums over the groups (Section~\ref{sec:cost}).
+
+\section{The formula}\label{sec:formula}
+
+Fix $\Delta\ge3$ and an integer $m\ge\max(60,\Delta)$, and put $Q=m^4$, $R=m^3$, $L=6Q$, $K=L^Q$. Take a formula with at most three literals per clause, $n$ variables and at most $\Delta$ occurrences per variable, so with $M\le\Delta n$ occurrences. Put $r=\Delta n/m$. We count its solutions. If $n<K^2$, enumerate.
+
+Each occurrence $j$ has a bit $x_j$, which is $1$ if the literal of $j$ is false, and a free bit $y_j$. Then
+\begin{equation}\label{count}
+\#\text{solutions}=\sum_{\text{variables}}\ \sum_{y}\ \prod_e\Bigl(1-\prod_{j\in e}y_j\Bigr)\ \prod_j\mathbf 1[x_j=y_j].
+\end{equation}
+
+\emph{Words.} Words are $[L]^Q$. Give the variables words $s(v)$ cyclically. Since $n\ge K^2$, a word has at most $2n/K$ variables and $2\Delta n/K$ occurrences. Let the \emph{load} of $(u,w)$ be the number of occurrences placed so far of variables with the word $u$ in clauses with the word $w$. For fixed $u$, the loads sum over $w$ to at most $2\Delta n/K$. Going through the clauses, give the clause $e$ a word $o(e)$ that differs in every digit from the words of its variables; at least $(L-3)^Q\ge K(1-3Q/L)=K/2$ words do. Among these, take the word $w$ with the least sum of $\mathrm{load}(s(v),w)$ over the variables $v$ of $e$. This sum has average at most $3(2\Delta n/K)/(K/2)=12\Delta n/K^2$, and $e$ adds at most $3\le\Delta n/K^2$ to a load. So all loads are at most $h=\lceil13\Delta n/K^2\rceil$.
+
+\emph{Cells.} A \emph{cell} is $(u,w,\lambda)$ with words $u,w$ that differ in every digit and $\lambda\in[h]$. There are $N\le K^2h\le14\Delta n$ cells. Since loads are at most $h$, each occurrence $j$ of $v$ in $e$ gets its own cell $c_j=(s(v),o(e),\lambda)$. Put $d_j=(o(e),s(v),\lambda)$.
+
+\section{The window}\label{sec:window}
+
+For $E\subseteq[Q]$, let $\tau_E$ exchange the letters of the two words of a cell in the digits of $E$. So $\tau_{[Q]}c_j=d_j$ and $\tau_E\tau_F=\tau_{E+F}$, with $E+F$ the symmetric difference. Since the two words differ in every digit, the cells $\tau_Ec$ for different $E$ are different.
+
+\begin{lemma}\label{lem:window}
+There are rationals $\kappa_E$, $|E|\le R$, and functions $\alpha_l,f_l$ on cells, with at most $N/m^2$ indices $l$, such that for all cells $c,d$
+\[
+\sum_{|E|\le R}\kappa_E\mathbf 1[\tau_Ec=d]-\mathbf 1[\tau_{[Q]}c=d]=\sum_l\alpha_l(c)f_l(d).
+\]
+\end{lemma}
+\begin{proof}
+Put $b=2^Q$. For $\sigma\in\{\pm1\}^Q$ put $\sigma^E=\prod_{t\in E}\sigma_t$. Then $\sigma^E\sigma^F=\sigma^{E+F}$, and $\sum_\sigma\sigma^E$ is $b$ if $E=\varnothing$ and $0$ otherwise. If $\sigma$ has $k$ minus signs, then $\sigma^{[Q]}=(-1)^k$ and $\sum_t\sigma_t=Q-2k$. Let $p$ be a polynomial of degree at most $R$ with $p(k)=(-1)^k$ on the at most $R+1$ integers $k$ with $|Q-2k|\le R$. Put $k=\sum_t(1-\sigma_t)/2$ in $p$, expand, and use $\sigma_t^2=1$. This gives $\kappa_E$ such that $\rho_\sigma:=\sum_{|E|\le R}\kappa_E\sigma^E-\sigma^{[Q]}$ is $0$ unless $|\sum_t\sigma_t|>R$. Call such $\sigma$ \emph{exceptional}. Since $\sum_\sigma(\sum_t\sigma_t)^2=bQ$, at most $bQ/R^2=b/m^2$ vectors $\sigma$ are exceptional.
+
+The \emph{cube} of a cell $c_0$ is the set of the $b$ cells $\tau_Fc_0$. The cubes partition the cells, so there are $N/b$ cubes. Choose a base cell $c_0$ in each cube. If $c=\tau_Fc_0$ and $d=\tau_{F'}c_0$, then for every $E$ we have $\mathbf 1[\tau_Ec=d]=\mathbf 1[E+F+F'=\varnothing]=b^{-1}\sum_\sigma\sigma^E\sigma^F\sigma^{F'}$. So the left side of the lemma is $b^{-1}\sum_\sigma\rho_\sigma\sigma^F\sigma^{F'}$, a sum over exceptional $\sigma$. If $c,d$ lie in different cubes, the left side is $0$. So take as indices the pairs $l$ of a cube and an exceptional $\sigma$, with $\alpha_l(\tau_Fc_0)=\rho_\sigma\sigma^F/b$ and $f_l(\tau_{F'}c_0)=\sigma^{F'}$ on this cube, and both functions $0$ outside it. There are at most $(N/b)(b/m^2)=N/m^2$ indices.
+\end{proof}
+
+\section{Trading and the pigeonhole}\label{sec:trade}
+
+Fix values of all bits. Let $A,D$ be the $M\times M$ matrices with
+\[
+A_{ij}=\sum_{|E|\le R}\kappa_E\mathbf 1[\tau_Ec_i=d_j]\,\mathbf 1[x_i=y_j],\qquad D_{ij}=\mathbf 1[\tau_{[Q]}c_i=d_j]\,\mathbf 1[x_i=y_j].
+\]
+Since $\tau_{[Q]}c_i=d_i$ and the cells $d_j$ are different, $D$ is diagonal and $\det D=\prod_j\mathbf 1[x_j=y_j]$. By Lemma~\ref{lem:window}, $(A-D)_{ij}=\sum_l\alpha_l(c_i)f_l(d_j)\mathbf 1[x_i=y_j]$. So every row of $A-D$ lies in the span of the at most $2N/m^2$ vectors $(f_l(d_j)\mathbf 1[\beta=y_j])_j$, $\beta\in\bits$, and $2N/m^2\le28\Delta n/m^2\le r$.
+
+By Theorem~\ref{thm:trade},
+\begin{equation}\label{trade}
+\prod_j\mathbf 1[x_j=y_j]=\sum_{|T|\le r}(-1)^{|T|}\det\langle T\rangle.
+\end{equation}
+
+Fix $T$. An entry $(i,j)$ of $\langle T\rangle$ can be nonzero only if $\tau_Ec_i=d_j$ for some $E$; this $E$ is unique, and we call it $E_{ij}$. In a row outside $T$, a nonzero entry has $|E_{ij}|\le R$. In a row in $T$, it has $|E_{ij}|\le R$ or $E_{ij}=[Q]$. Let $z_1,\dots,z_Q$ be formal variables, and let $\langle T\rangle_z$ be $\langle T\rangle$ with each entry $(i,j)$ multiplied by $\prod_{t\in E_{ij}}z_t$. In the expansion of $\det\langle T\rangle_z$ over permutations, a permutation $\pi$ gives a monomial $z^a$ in which $a_t$ is the number of rows $i$ with $t\in E_{i\pi(i)}$. So
+\[
+\sum_ta_t=\sum_i|E_{i\pi(i)}|\le MR+|T|Q\le\Delta nR+rQ=2rQ,
+\]
+since $R=Q/m$, and some $a_t\le2r$. For a polynomial $f$ in $z$, let $\operatorname{Sum}_t(f)$ be the sum of its coefficients at the monomials $z^a$ with $a_t\le2r$, and $a_{t'}>2r$ for $t'<t$. Each monomial of $\det\langle T\rangle_z$ is counted for exactly one $t$, and the sum of all its coefficients is $\det\langle T\rangle$. So $\det\langle T\rangle=\sum_t\operatorname{Sum}_t(\det\langle T\rangle_z)$.
+
+Fix $t$. For a set $S$ of rows, let $H_{T,t,S}$ be $\langle T\rangle_z$ with only these entries kept: in the rows of $S$ those with $t\in E_{ij}$, and in the other rows those with $t\notin E_{ij}$. By linearity in the rows, $\det\langle T\rangle_z=\sum_S\det H_{T,t,S}$. Each monomial of $\det H_{T,t,S}$ has $a_t=|S|$, so $\operatorname{Sum}_t(\det H_{T,t,S})=0$ for $|S|>2r$. Hence
+\begin{equation}\label{sum}
+\prod_j\mathbf 1[x_j=y_j]=\sum_{|T|\le r}(-1)^{|T|}\sum_t\ \sum_{|S|\le2r}\operatorname{Sum}_t\bigl(\det H_{T,t,S}\bigr).
+\end{equation}
+
+\section{The determinant across a digit}\label{sec:factor}
+
+Equation~\eqref{sum} holds for all values of the bits. Now let the bits vary. Fix $T,t,S$ and $H=H_{T,t,S}$. Then $H_{ij}=\gamma_{ij}\mathbf 1[x_i=y_j]$, where $\gamma_{ij}$ is zero or a rational times a monomial in $z$, and does not depend on the bits. For an occurrence $i$ of $v$ in $e$, let $s_i,o_i$ be the letters of $s(v),o(e)$ at digit $t$. If $\gamma_{ij}\ne0$, comparing first words at digit $t$ in $\tau_{E_{ij}}c_i=d_j$ gives $o_j=s_i$ if $t\notin E_{ij}$, and $o_j=o_i$ if $t\in E_{ij}$; and $t\in E_{ij}$ exactly when $i\in S$. So with $g_i=s_i$ for $i\notin S$, and $g_i=o_i$ for $i\in S$,
+\begin{equation}\label{nonzero}
+\gamma_{ij}\ne0\quad\Longrightarrow\quad o_j=g_i.
+\end{equation}
+The \emph{bits of a letter $g$} are the variables $v$ with $s(v)_t=g$ and the bits $y_j$ with $o_j=g$. Each bit belongs to exactly one letter. For $\xi\in\bits^S$, let $H^\xi$ be $H$ with $x_i$ replaced by the number $\xi_i$ for $i\in S$. Then $\det H=\sum_\xi\det H^\xi\prod_{i\in S}\mathbf 1[x_i=\xi_i]$.
+
+Let $H^\xi_g$ be the submatrix of $H^\xi$ with the rows that have $g_i=g$ and the columns that have $o_j=g$. By~\eqref{nonzero}, all entries of $H^\xi$ outside these submatrices are $0$. An entry of $H^\xi_g$ reads $y_j$ with $o_j=g$ and, if $i\notin S$, reads $x_i$ with $s_i=g$, so it reads only bits of $g$. Call $S$ \emph{balanced} if every $H^\xi_g$ is square; this depends only on $t,S$. There are $M$ rows and $M$ columns, so if $S$ is not balanced, some $H^\xi_g$ has more rows than columns. These rows are dependent, and $\det H^\xi=0$. If $S$ is balanced, listing the rows and the columns by letter makes $H^\xi$ block diagonal, so $\det H^\xi=\operatorname{sgn}(t,S)\prod_g\det H^\xi_g$, with a sign that depends only on $t,S$. Put
+\[
+\Psi_g=\prod_{i\in S:\,s_i=g}\mathbf 1[x_i=\xi_i]\ \prod_{e:\,o(e)_t=g}\Bigl(1-\prod_{j\in e}y_j\Bigr)\ \det H^\xi_g,
+\]
+a polynomial in $z$ whose coefficients depend only on the bits of $g$. Over all $g$, each indicator and each clause factor appears exactly once. So the sum of $\prod_g\Psi_g$ over all bits equals $\prod_g\sum_{\text{bits of }g}\Psi_g$. With~\eqref{count},~\eqref{sum} and the linearity of $\operatorname{Sum}_t$, this gives
+\begin{equation}\label{final}
+\#\text{solutions}=\sum_{|T|\le r}(-1)^{|T|}\sum_t\ \sum_{\substack{|S|\le2r\\S\text{ balanced}}}\operatorname{sgn}(t,S)\sum_{\xi\in\bits^S}\operatorname{Sum}_t\Bigl(\prod_g\ \sum_{\text{bits of }g}\Psi_g\Bigr).
+\end{equation}
+
+\section{A worked example}\label{sec:example}
+
+We follow the identities on one square, with two letters, $Q=2$ and $R=1$, and with one occurrence on each cell; in this section only, the parameters have these values, and there are no clauses. These parameters are far below those of the proof: the example illustrates the identities and shows no saving. The script \texttt{checks/check\_example.py} in the directory of this paper checks by exact arithmetic the values below, the identity on all $256$ bit points, and formula~\eqref{sum} with the factorization by letters on all $256$ bit points.
+
+\medskip\noindent\emph{The cells.} A cell is determined by its first word $u\in\{00,01,10,11\}$, since its second word is the complement $\bar u$. The swap $\tau_{\{i\}}$ flips digit $i$ of $u$, and $\tau_{[Q]}$ is the antipode. Index the occurrences by $u$, so $c_u$ has first word $u$, and $d_u$ has first word $\bar u$.
+
+\medskip\noindent\emph{The window.} Here $p(k)=1-2k$ has $p(k)=(-1)^k$ at $k=0,1$. Substituting $k=(2-\sigma_1-\sigma_2)/2$ gives $p=\sigma_1+\sigma_2-1$. So $\kappa_\varnothing=-1$ and $\kappa_{\{1\}}=\kappa_{\{2\}}=1$. Only $\sigma=(-1,-1)$ has $\rho_\sigma\ne0$, with $\rho_\sigma=-4$, and the difference of Lemma~\ref{lem:window} is $-\mathbf v\mathbf v^{\mathsf T}$ for a vector $\mathbf v$ with entries $\pm1$, of rank $1$. So $r=2$.
+
+\medskip\noindent\emph{The identity.} Write $e_{uu'}=\mathbf 1[x_u=y_{u'}]$. The entry of $A$ at the row $u$ and the column $u'$ is $\kappa_E e_{uu'}$, for the $E$ with $\tau_Ec_u=d_{u'}$. In the order $00,01,10,11$, this $E$ is $\{1,2\}$ on the diagonal, where $A$ is $0$, and it is $\varnothing$ on the antidiagonal, where the coefficient is $-1$. So
+\[
+A=\begin{pmatrix}0&e_{00,01}&e_{00,10}&-e_{00,11}\\ e_{01,00}&0&-e_{01,10}&e_{01,11}\\ e_{10,00}&-e_{10,01}&0&e_{10,11}\\ -e_{11,00}&e_{11,01}&e_{11,10}&0\end{pmatrix},
+\]
+and $D$ is the diagonal matrix of the $e_{uu}$. Let $F_k=\sum_{|T|=k}\det\langle T\rangle$. For $x=y=(1,0,1,0)$, we get $F_0=1$, $F_1=4$, $F_2=4$, and $F_0-F_1+F_2=1=\det D$. For $x=y=(0,0,0,0)$, we get $F_0=-3$, $F_1=-4$, $F_2=0$, and again the sum is $1$. For $x=(1,0,0,0)$ and $y=(0,0,0,0)$, the first row of $A$ and of $A-D$ has only $e_{00,\cdot}=0$, so all $F_k$ are $0$, and $\det D=0$.
+
+\medskip\noindent\emph{The pigeonhole.} The budget is $MR+|T|Q\le4+2\cdot2=8$, and $2r=4$. Each exponent is at most $M=4$, so $|S|\le2r$ removes nothing, every monomial is counted at $t=1$, and digit $2$ contributes nothing. The example is too small for the pigeonhole to act.
+
+\medskip\noindent\emph{The letters.} Take $t=1$ and $S=\{00,10\}$. The column $u'$ has $o_{u'}=\bar u'_1$, so the columns of letter $0$ are $\{10,11\}$, and those of letter $1$ are $\{00,01\}$. The row $01\notin S$ has $g=s=0$, and the row $11\notin S$ has $g=1$. The row $00\in S$ has $g=o=1$, and the row $10\in S$ has $g=o=0$. So the rows of letter $0$ are $\{01,10\}$, those of letter $1$ are $\{00,11\}$, and $S$ is balanced. By contrast $S=\{00\}$ is not: letter $1$ then has the three rows $00,10,11$ and two columns. The first block reads the bit $x_{01}$, the number $\xi_{10}$, and the bits $y_{10},y_{11}$. These bits belong to letter $0$. The indicator $\mathbf 1[x_{10}=\xi_{10}]$ reads $x_{10}$, whose letter is $s_{10}=1$, so it is a factor of $\Psi_1$.
+
+\medskip\noindent\emph{Two wires: the crossing.} The smallest case of these matrices is a known identity. Keep $Q=2$, $R=1$ and the numbers $\kappa_E$ above, so that $\sum_{|E|\le1}\kappa_E\tau_E$ is $\tau_{\{1\}}+\tau_{\{2\}}-1$, but take only two occurrences, on the cells $c_1$ and $c_2=\tau_{\{1\}}c_1$, so that $A,D$ have order $2$. Then $\tau_Ec_1=d_2$ and $\tau_Ec_2=d_1$ hold for a single flip, and $\tau_Ec_i=d_i$ for no short read. So the numbers $k_{ij}$ with $A_{ij}=k_{ij}\mathbf 1[x_i=y_j]$ form the matrix with rows $(0,1)$ and $(1,0)$, and $k-I$ has rank $1$. The rows of $A-D$ span a space of dimension $2=\nu$ for general bits, so Theorem~\ref{thm:trade} keeps the term with both rows from $A-D$, and that term is
+\begin{equation}\label{eq:skein}
+\det(A-D)=\mathbf 1[x_1=y_1]\,\mathbf 1[x_2=y_2]-\mathbf 1[x_1=y_2]\,\mathbf 1[x_2=y_1]=(x_2-x_1)(y_2-y_1),
+\end{equation}
+on bits. This is the expansion of a crossing in~\cite[Appendix~H]{Cla26}. Its last term is one product across the cut between the bits $x$ and the bits $y$. So the parity window and this single-bit crossing are one expansion at two sizes. With two wires the term of $A-D$ remains, as one product. With many wires and few exceptional vectors, the dimension of the rows is below the number of rows, and that term vanishes. This relates the window to this single-bit identity only. The recursion on cliques of~\cite{Cla26} rests on other decompositions of the crossing, and no proof there uses its Appendix~H.
+
+\section{The cost and the end of the proof}\label{sec:cost}
+
+We evaluate~\eqref{final}. Since $M/m\le r$, for every $q>0$ we have $\sum_{k\le qr}\binom Mk\le m^{qr}\sum_k\binom Mkm^{-k}=m^{qr}(1+1/m)^M\le m^{qr}\mathrm e^r$. So there are at most $(\mathrm em)^r$ sets $T$ and at most $4^r(\mathrm em^2)^r$ pairs $(S,\xi)$, so at most $(4\mathrm e^2m^3)^r$ triples $(T,S,\xi)$.
+
+A letter $g$ is the letter at digit $t$ of $K/L$ words, so it has at most $2n/L$ variables. At most $K^2h/L\le14\Delta n/L$ cells have the letter $g$ at digit $t$ of the first word, and the cells $d_j$ are different, so $g$ has at most $14\Delta n/L$ bits $y_j$. So $g$ has at most $2^{16\Delta n/L}\le2^{n/m}$ assignments, since $L=6m^4$ and $\Delta\le m$.
+
+The numbers $\kappa_E$ depend only on $m$. All polynomials have exponents at most $M$ in each $z_t$, so they have at most $(M+1)^Q$ monomials, with coefficients of polynomially many bits, and a determinant of such polynomials is found from its values at $(M+1)^Q$ points. So one $\Psi_g$, the product over the $L$ letters, one $\operatorname{Sum}_t$, and the words and signs each take time polynomial in $n$, with degree depending on $m$, and this is at most $C_m2^{n/m}$. Multiply by the triples, the $Q$ digits, the $L$ letters and their assignments. Since $2n/m\le r$ and $8\mathrm e^2<60\le m$, one formula takes time at most $C_m(8\mathrm e^2m^3)^r\le C_mm^{4r}=C_m2^{4\Delta n\log_2m/m}$ times a polynomial in $n$. A set, a value $\xi$ and a table of at most $(M+1)^Q$ coefficients each have $n^{O_m(1)}$ bits, and the loops over triples, digits, letters and assignments keep only their current position and a running sum. So the space is $n^{O_m(1)}$.
+
+\medskip\noindent\emph{Few occurrences.} The reduction follows the sparsification lemma~\cite{IPZ01}, in a form that we analyze directly. Fix $\ell\ge2$. Normalize by deleting tautologies, repeated literals, repeated clauses, and clauses containing another clause. While one of these cases applies, take the first available one, breaking ties lexicographically:
+\begin{enumerate}
+\item[(i)] a literal $Z_0$ lies in at least $\ell$ binary clauses;
+\item[(ii)] a pair $Z_0$ of literals lies in at least $\ell$ ternary clauses;
+\item[(iii)] a literal $Z_0$ lies in at least $\ell^2$ ternary clauses.
+\end{enumerate}
+Write all those clauses as $Z_0\vee C_i$. Since $\bigwedge_i(Z_0\vee C_i)\equiv Z_0\vee\bigwedge_iC_i$, branch: add the clause $Z_0$, or add all clauses $C_i$. Then normalize. The formula is satisfiable if and only if some leaf is. Leaves may share solutions, so we only test whether a count is positive. At a leaf, a literal lies in at most $1+\ell+\ell^2$ clauses, so a variable occurs at most $2(1+\ell+\ell^2)\le4\ell^2$ times.
+
+\begin{lemma}\label{lem:tree}
+The tree has depth at most $10n\ell$ and at most $\exp((20\log\ell+10)n/\ell)$ leaves.
+\end{lemma}
+\begin{proof}
+Added clauses are new and distinct: the $C_i$ differ, and an existing subclause would have removed a clause $Z_0\vee C_i$. For the analysis, let $\nu$ count unit clauses, and let $\mu$ be the largest size of a family of binary clauses in which each literal occurs fewer than $2\ell$ times. Counting each clause at its two literals gives $\mu\le2n\ell$, and $\nu\le2n$, so $\Upsilon=4\ell\nu+\mu\le10n\ell$. Adding $s$ new units keeps the old units and removes at most $2\ell s$ clauses from a largest family, so $\Upsilon$ grows by at least $2\ell s$.
+
+Before (ii) or (iii), every literal lies in fewer than $\ell$ binary clauses. Case (ii) adds one binary clause. Case (iii) adds fewer than $\ell$ containing any one literal, else (ii) would apply. So all degrees stay below $2\ell$, and each new binary clause raises $\Upsilon$ by one. In all cases, the two children gain at least $1$ and $\eta:=\ell^2$. Put $\vartheta=(\log\eta+1)/\eta$. From $e^\vartheta\ge1+1/\eta$ and $e^{\vartheta\eta}=\mathrm e\eta\ge2\eta$ we get $e^{-\vartheta}+e^{-\vartheta\eta}\le\eta/(\eta+1)+1/(2\eta)\le1$, so $e^{-\vartheta\Upsilon}$ at a node is at least the sum over its children. Hence the number of leaves is at most $e^{10\vartheta n\ell}=\exp((20\log\ell+10)n/\ell)$, and each step raises $\Upsilon$, so the depth is at most $10n\ell$.
+\end{proof}
+
+
+
+\begin{proof}[Proof of Theorem~\ref{thm:sat}]
+Fix $\varepsilon$. Choose $\ell$ with $(20\log\ell+10)/\ell\le\varepsilon/4$, so that the number of leaves is at most $\mathrm e^{\varepsilon n/4}\le2^{\varepsilon n/2}$, and put $\Delta=4\ell^2$. Choose $m\ge\max(60,\Delta)$ with $4\Delta\log_2m/m\le\varepsilon/2$. Traverse the tree depth first, and accept at the first positive count. Store only the path of the current node, which has at most $10n\ell$ bits by Lemma~\ref{lem:tree}, and recompute the formula at the node from the root. A normalized formula has $O(n^3)$ clauses, so a step costs time polynomial in $n$ and $|\varphi|$, and the tree has at most twice as many nodes as leaves. At a leaf, run the algorithm above, which enumerates if $n<K^2$. The time is $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$, and the space is $|\varphi|^{O_\varepsilon(1)}$, since $n\le|\varphi|$. For a formula with at most $\Delta_0$ occurrences per variable, skip the branching, and run Sections~\ref{sec:formula}--\ref{sec:factor} with $\Delta=\max(\Delta_0,3)$ and with $m\ge\max(60,\Delta)$ such that $4\Delta\log_2m/m\le\varepsilon$. Then~\eqref{final} is the number of satisfying assignments.
+\end{proof}
+
+\section{Limits}\label{sec:limits}
+
+Three statements explain why the proof has this form. The numbers $Q$ and $R$ are free in this section. Take a cell whose two words differ in every digit. Its cube is a copy of $\bits^Q$, with $2^Q$ corners: the swap of digit $i$ flips coordinate $i$, and $\tau_{[Q]}$ is the antipodal map $a\mapsto\bar a$.
+
+\emph{No exact short read.} The next proposition says that the error in Step~1 of Section~\ref{sec:strategy} cannot be removed for free. Let $X$ be a bit vector on the corners.
+
+\begin{proposition}\label{prop:exact}
+Suppose a function $\Gamma(z,X)$, polynomial in formal variables $z_1,\dots,z_Q$, satisfies $\Gamma(1,\dots,1,X)=X_{\bar a}$ for all bit vectors $X$ on the corners, and that for each $t$, $\Gamma(z,X)$ on $z_t=0$ does not depend on the entry $X_{\bar a}$, where $a$ is a corner. Then $\Gamma$ has total degree at least $Q$ in $z$.
+\end{proposition}
+\begin{proof}
+Let $\Theta(z)$ be the difference of $\Gamma$ between $X_{\bar a}=1$ and $X_{\bar a}=0$, with the other entries fixed. Then $\Theta(1,\dots,1)=1$, and $z_t\mid\Theta$ for each $t$, so $\prod_tz_t\mid\Theta\ne0$.
+\end{proof}
+
+This extends a root count of O'Donnell~\cite[Section~5.1]{OD26} to schemes that need not be linear. For the linear scheme of Section~\ref{sec:window} the conclusion is immediate: if $R<Q$ and $d=\tau_{[Q]}c$, then the sum in Lemma~\ref{lem:window} is $0$ and the second term is $1$, so the error is not $0$. The proposition says the same for every scheme of this form, linear in $X$ or not.
+
+\emph{Reads of length above $R$ are necessary.} Does the product of wires have an expansion in which every read flips at most $R$ digits? On one cube, with one occurrence on each corner, index $x$ by the corner of $c_j$ and $y$ by the corner of $d_j$, so that a wire compares $x_a$ with $y_{\bar a}$. A \emph{permutation product} of a permutation $\pi$ of the corners is $\Pi_\pi(x,y)=\prod_a\mathbf 1[x_a=y_{\pi a}]$. The Leibniz formula writes each determinant in Theorem~\ref{thm:trade} as a combination of these, and the product of the wires is the permutation product of $a\mapsto\bar a$. Write $|a\oplus a'|$ for the number of coordinates where $a,a'$ differ, and call $|a\oplus\pi a|$ the \emph{length} of the read of $\pi$ at $a$. For a corner $a$ let $s(a)=\sum_i(-1)^{a_i}$.
+
+\begin{proposition}\label{prop:long}
+Let $Q\ge1$, and suppose $\prod_a\mathbf 1[x_a=y_{\bar a}]$ is a linear combination of permutation products on the bit points $(x,y)$.
+\begin{enumerate}
+\item If $R<Q/2$, then for each corner $a_0$, the combination has a term with $|a_0\oplus\pi a_0|>R$.
+\item The combination has a term with $\sum_a|a\oplus\pi a|\ge\sum_a|s(a)|\ge2^Q\sqrt{Q/3}$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+Both parts evaluate at a bit point with $x_a=\zeta_a$ and $y_a=\zeta_{\bar a}$, where the bits $\zeta$ take each value at exactly one of $a,\bar a$, for all $a$. At this point, the left side is $1$. A term $\Pi_\pi$ is nonzero at this point only if $\zeta_a=\zeta_{\overline{\pi a}}$, that is $\zeta_{\pi a}\ne\zeta_a$, for all $a$.
+
+(1) The Hamming ball of radius $R$ around $a_0$ contains no antipodal pair, since two of its points differ in at most $2R<Q$ coordinates. So some $\zeta$ as above has the value $0$ on the whole ball. A nonzero term then has $\pi a_0$ outside the ball.
+
+(2) Let $\zeta_a=0$ if $s(a)>0$, and $\zeta_a=1$ if $s(a)<0$; since $s(\bar a)=-s(a)$, this is consistent with the requirement, and on the corners with $s(a)=0$ choose one of each antipodal pair. For a nonzero term, $s(a)$ and $s(\pi a)$ do not have strictly the same sign. Flipping a coordinate changes $s$ by $2$, so $2|a\oplus\pi a|\ge|s(a)-s(\pi a)|=|s(a)|+|s(\pi a)|$. Sum over $a$, using that $\pi$ is a bijection: $\sum_a|a\oplus\pi a|\ge\sum_a|s(a)|$. For the uniform corner, $\mathbb Es^2=Q$ and $\mathbb Es^4\le3Q^2$, and H\"older gives $\mathbb Es^2\le(\mathbb E|s|)^{2/3}(\mathbb Es^4)^{1/3}$, so $\mathbb E|s|\ge\sqrt{Q/3}$.
+\end{proof}
+
+Part~(2) is attained for $Q=2$: by the script of Section~\ref{sec:example}, the product lies in the span of the permutation products of total length at most $4=\sum_a|s(a)|$ on all bit points, and not in the span of those of length at most $2$. In the form of Theorem~\ref{thm:trade}, a term with $k$ rows of length above $R$ and all other rows of length at most $R$ on a cube has total length at most $(2^Q-k)R+kQ$. So if $R<\sqrt{Q/3}$, then some term has $k\ge2^Q(\sqrt{Q/3}-R)/(Q-R)$ such rows on that cube. At the parameters of Section~\ref{sec:formula} we have $R=m^3>\sqrt Q$, so this count forces nothing, and part~(1) is what requires reads of length above $R$. Part~(2) also suggests a limit of the pigeonhole, though we do not prove one for all orbits: the length of a read on a cube is its degree in the variables $z$ of Section~\ref{sec:trade}, so on a cube some term has average exponent at least $2^Q/\sqrt{3Q}$ over the digits. That is the order of the next bound.
+
+\emph{The number of products.} The next bound holds for every sum of products over the partitions $P_t$ defined below. It concerns the equality of a matrix with its transpose, which differs from the product of wires in~\eqref{final}: it runs over all pairs of words, while the cells of Section~\ref{sec:formula} have words that differ in every digit and an index $\lambda$. Also, a term of~\eqref{final} is a product over the letters of digit $t$ only after $\operatorname{Sum}_t$ is expanded into monomials. So we use the bound only as a comparison. For $X,Y\in\bits^{[G]^Q\times[G]^Q}$, with $\NN=G^{2Q}$ entries each, let $\T(X,Y)=\mathbf 1[Y_{w,u}=X_{u,w}\ \forall u,w]$. For a digit $t$, the partition $P_t$ sorts the entries by digit $t$ of their row, and a \emph{product over $P_t$} is a product of functions of its blocks. Fix $t$ and a coloring $\chi:[G]^Q\to\{\pm1\}$ of the words that depends only on digit $t$. Each block of $P_t$ then lies on one side of $\chi$, so merging the blocks writes a product over $P_t$ as a function of the entries with $\chi=1$ times a function of the entries with $\chi=-1$, by the color of the row. We compare ranks across the cut between all $X$ bits and all $Y$ bits. Fix a set $W_0$ of pairs of words. Set to $0$ every $Y_{u,w}$ and every $X_{w,u}$ with $(u,w)\notin W_0$. Then $\T$ becomes the identity matrix between $(X_{w,u})_{(u,w)\in W_0}$ and $(Y_{u,w})_{(u,w)\in W_0}$, of rank $2^{|W_0|}$. The bit $Y_{u,w}$ lies on the side of $u$, and $X_{w,u}$ lies on the side of $w$. Let $n^+$ count the $(u,w)\in W_0$ with $\chi(u)=1$, $\chi(w)=-1$, let $n^-$ count those with $\chi(u)=-1$, $\chi(w)=1$, and let $n^0=|W_0|-n^+-n^-$, split as $n'+n''$ according to the side of the two words. The side $\chi=1$ holds $n^-+n'$ bits of $X$ and $n^++n'$ bits of $Y$, and the side $\chi=-1$ holds $n^++n''$ bits of $X$ and $n^-+n''$ bits of $Y$. So the rank between the $X$ and $Y$ bits of a function of one side is at most $2^{\min(n^+,n^-)+n'}$ or $2^{\min(n^+,n^-)+n''}$. So one product has rank at most
+\begin{equation}\label{eq:rank}
+ 2^{|W_0|-|n^+-n^-|}.
+\end{equation}
+
+\begin{proposition}\label{prop:cut}
+Let $G$ be even. If $\T=\T_1+\dots+\T_Q$ on bit matrices, where $\T_t$ is a linear combination of $r_t$ products over $P_t$, then
+\[
+ \sum_tr_t\ge2^{D^*},\qquad D^*=\frac\NN2\,\frac{\binom{2Q}Q}{4^Q}\ge\frac{\NN}{4\sqrt Q}.
+\]
+\end{proposition}
+\begin{proof}
+Put $\chi_t(u)=1$ if $u_t\le G/2$ and $\chi_t(u)=-1$ otherwise. Let $s'(u)=\sum_t\chi_t(u)$ and $W_0=\{(u,w):s'(u)>s'(w)\}$. Permuting the digits fixes $W_0$, so $D^*:=n^+_t-n^-_t$ does not depend on $t$. Summing over $t$, and using $\chi_t(u)-\chi_t(w)\in\{0,\pm2\}$,
+\[
+ QD^*=\sum_{(u,w)\in W_0}\frac{s'(u)-s'(w)}2=\frac\NN4\,\mathbb E|s'(u)-s'(w)|
+\]
+for uniform $u,w$, because the sum over $W_0$ takes half of the pairs with $s'(u)\ne s'(w)$. Here $s'(u)-s'(w)$ has the law of a sum of $2Q$ independent signs, whose expected absolute value is $2Q\binom{2Q}Q4^{-Q}$. This gives the formula for $D^*$. The bound $\binom{2Q}Q\ge4^Q/(2\sqrt Q)$ gives $D^*\ge\NN/(4\sqrt Q)$. Comparing ranks by~\eqref{eq:rank}, $2^{|W_0|}\le\sum_tr_t2^{|W_0|-D^*}$.
+\end{proof}
+
+So a sum of products over the partitions $P_t$ that equals $\T$ has an exponent of order at least $\NN/\sqrt Q$. With $Q=m^4$, the count of Section~\ref{sec:cost} has an exponent of order $N\log m/m=N(\log Q)/Q^{1/4}$, up to constants, where $N$ is the number of cells of Section~\ref{sec:formula}. The two exponents differ by a factor of about $Q^{1/4}\log Q$, although the two products are not the same.
+
+\section{Formalization}\label{sec:formal}
+\sloppy
+
+The Lean~4 development~\cite{Lean4,Mathlib} is in the directory \texttt{lean/} of the repository \url{https://github.com/suquark/NotETHSimplified}. The proof of this paper is the library \lean{OnePigeonhole}. It uses the libraries \lean{TransposeBase} and \lean{SatBase} for the word language, the network of a formula, the branching tree and the machine, and \lean{FormalizationKit} for resource bounds on the machine. The file \lean{OnePigeonhole/Audit.lean} reports that the theorems listed there depend only on the axioms \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}, or on a subset of them, and the library contains no \lean{sorry}. The file \lean{lean/Audit.lean} reports the same for \lean{exact\_degree}, \lean{cut\_prop} and \lean{digit\_cost}. The directory \texttt{lean/third\_party/} holds OpenAI's machine with its license and a patch record for Lean 4.33.1. Table~\ref{tab:lean} maps the paper to the Lean declarations.
+
+\begin{table}[ht]
+\centering
+\small
+\resizebox{\textwidth}{!}{\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Paper} & \textbf{Lean declaration} & \textbf{Module of \lean{OnePigeonhole}} \\
+\midrule
+Words and cells & \lean{load\_table\_le}, \lean{sq\_mul\_capB\_le}, \lean{wiresOf}, \lean{onNodes\_wiresOf} & \lean{Greedy} \\
+Lemma~\ref{lem:window} & \lean{card\_exc\_mul\_sq\_le}, \lean{kappa}, \lean{Bmat\_sub\_one\_eq}, \lean{rank\_Bmat\_sub\_one\_le} & \lean{Walsh}, \lean{Window} \\
+Theorem~\ref{thm:trade}, Eq.~\eqref{trade} & \lean{det\_eq\_sum\_rowMix}, \lean{prod\_eqv\_eq\_sum\_rowMix} & \lean{Trade} \\
+Eq.~\eqref{sum} & \lean{sum\_exp\_le}, \lean{prod\_eqv\_eq\_sum\_sumT}, \lean{prod\_eqv\_eq\_grid} & \lean{Pigeon} \\
+Eq.~\eqref{nonzero}, blocks & \lean{letter\_of\_coefH\_ne\_zero}, \lean{det\_Hz\_eq\_prod}, \lean{det\_cubeMat} & \lean{Blocks}, \lean{Cube} \\
+Eq.~\eqref{final} & \lean{det\_decomp\_sumT}, \lean{net\_decomp\_sumT}, \lean{det\_decomp\_masks}, \lean{net\_decomp\_masks} & \lean{Theorem}, \lean{Net} \\
+Word program, 3-SAT & \lean{Pseudo.Final.pseudo\_main} & \lean{Pseudo.Final} \\
+Machine, ETH & \lean{Machine.machine\_main}, \lean{Machine.not\_ETH} & \lean{Machine.FinalMain} \\
+\midrule
+Lemma~\ref{lem:tree} & \lean{sparseTree\_leaves}, \lean{sparseTree\_height} & in \lean{SatBase} \\
+Compiler to stacks & \lean{compile\_correct} & in \lean{TransposeBase.Machine.Compile} \\
+Proposition~\ref{prop:exact} & \lean{exact\_degree} & in \lean{TransposeBase.Exact} \\
+Proposition~\ref{prop:cut} & \lean{cut\_prop}, \lean{digit\_cost} & in \lean{TransposeBase.Exact}, \lean{.Moments} \\
+\bottomrule
+\end{tabular}}
+\caption{Map from the paper to the Lean development.}\label{tab:lean}
+\end{table}
+
+The Lean proof departs from the text in these ways, and the claims are unchanged except where stated. Lemma~\ref{lem:window} is stated for the wires, and $\kappa_E$ depends only on $|E|$. The load bound is $h=\lfloor6(\lfloor n/K\rfloor+1)\Delta/K\rfloor+3$, and Lean proves $K^2h\le13\Delta n$ (\lean{sq\_mul\_capB\_le}). Equation~\eqref{count} is in network form: \lean{TransposeBase.Sat.net\_count} has one bit per wire, \lean{glue\_eqv} gives the two copies of each bit, and each variable has one more wire, to a node of its own. So a letter has at most $2K^2h/L$ bits, not $16\Delta n/L$. The parameters are $r=\lfloor M/m\rfloor$ and $J=2\lfloor M/m\rfloor+1$, with $80\le m$ and $26(1+\Delta)\le m$, where $M$ includes the wires of the variables. The cost has the factor $(6m)^9\exp(9(\ln m+3)M/m)$, and the choice of $m$ is \lean{exists\_m}. The program reads the coefficients from values on a grid of $(M+1)^Q$ points (\lean{prod\_eqv\_eq\_grid}); the formal-polynomial forms of~\eqref{sum} and~\eqref{final} are also theorems (\lean{prod\_eqv\_eq\_sum\_sumT}, \lean{det\_decomp\_sumT}, \lean{net\_decomp\_sumT}). The determinant is factored further than by letters: into cubes and the two sides of the digit $t$ (\lean{det\_Hz\_eq\_prod}, \lean{det\_cubeMat}), with a permutation \lean{pairOf} whose sign plays the role of $\operatorname{sgn}(t,S)$. In place of the values $\xi$ on $S$, Lean expands by a set $U\subseteq S$ (\lean{det\_Hz\_eq\_sum\_U}). The formula runs over triples of sets of size below $J$ with a test. Unbalanced $S$ is not removed: both sides of the factorization vanish there. The traversal \lean{treeE} is a bounded loop with no early exit, and its value counts the leaves with a positive count. The program enumerates for $n\le K^2$. The constants of Section~\ref{sec:cost} are computed by hand, and Lean has its own.
+
+\medskip\noindent\emph{The algorithm.} The word language has addition, subtraction and multiplication modulo $2^{\mathsf w}$, division, remainder, powers of $2$, comparison, and bounded loops. Its semantics gives the value of a program and the number of word operations, counted over the iterations that actually run. The theorem \lean{Pseudo.Final.pseudo\_main} states: for every $\varepsilon>0$ there are one program $\mathsf P$ and constants $C,b,c$ such that for every $n$ and every formula $F$ with $n$ variables and clauses of at most three literals, with $\mathsf w=c(n+1)^3$ and input the bitset of $F$ and the number $n$, the value of $\mathsf P$ is nonzero exactly when $F$ is satisfiable, and the number of word operations is at most $C(n+1)^b2^{\varepsilon n}$. The program has no determinant code. Since a side of a cube has order at most $2^Q$, a constant, the program holds a literal table of the coefficients of those determinants, scaled by one denominator (\lean{Pseudo.sideZ}, \lean{Pseudo.Leaf.exists\_lits}).
+
+\medskip\noindent\emph{The size of the table.} The table has $2Q\cdot2^{5\cdot2^Q}$ rows, each with $(2^Q+1)^Q$ entries, and the word width holds all of it (\lean{wConst}). With $Q=m^4$, the word constant $c$ grows at least doubly exponentially in $m^4$. The table buys a program with no determinant code; the mathematics does not need it. These theorems have the form that refuting ETH requires: a machine for each $\varepsilon$. One algorithm with running time $2^{o(n)}$ is a stronger statement, which Lean does not state.
+
+\medskip\noindent\emph{The machine.} The compiler \lean{compile\_correct} compiles every program of this language to a program on Boolean stacks, with a time of at most $7000(\mathsf w+1)^2$ source instructions for each word operation, and a bound of $7100(\mathsf w+1)^2$ bits on every stack at every prefix, independent of the number of iterations. Together with a parser of the input, and a compiler to a primitive multitape machine of OpenAI~\cite{OAIlean}, whose code is included in \texttt{lean/third\_party/} with its license, this gives \lean{Machine.machine\_main}: for every $\varepsilon>0$ there are a primitive machine and constants such that, for every $n$ and every formula $\varphi$ with $n$ variables and clauses of at most three literals, the machine started on the fixed encoding of $\varphi$ halts with the answer, in at most $C(|\varphi|+1)^d2^{\varepsilon n}$ steps, where $|\varphi|$ is the length of the encoding; and every prefix of that same run visits at most $C'(|\varphi|+1)^{d'}$ tape cells. The word width there is $\mathsf w=c(|\varphi|+1)^4+|\varphi|$. The theorem \lean{Machine.not\_ETH} states the failure of ETH in this model. The file \lean{OnePigeonhole/Audit.lean} checks by \lean{rfl} that these end statements are those of \lean{TransposeBase/Statements.lean}. A meta-program, \lean{OnePigeonhole/ClosureCheck.lean}, computes the dependency closure of \lean{not\_ETH}. It fails unless the closure omits \lean{UncrossingWires} and contains \lean{net\_decomp\_masks} and \lean{prod\_eqv\_eq\_sum\_rowMix}.
+
+\medskip\noindent\emph{What is not formalized.} The count of satisfying assignments on sparse formulas is not an end theorem of Lean, although \lean{net\_decomp\_masks} gives its formula for placed networks. Of the two wires of Section~\ref{sec:example}, the last equality of~\eqref{eq:skein} is \lean{TransposeBase.Sector.skein}; its derivation from $A$ and $D$ is not formalized. Proposition~\ref{prop:long} is not formalized. The theorem \lean{exact\_degree} is stated for an abstract family of polynomials, and \lean{cut\_prop} uses its own definition of the transpose, so no theorem links them to \lean{OnePigeonhole}. The constant $1/4$ of Proposition~\ref{prop:cut} is in \lean{cut\_prop}; \lean{digit\_cost} has $1/5$.
+
+\section*{Use of AI}
+The argument and the Lean proofs were developed in interactive sessions with Claude (Anthropic), building on the public manuscripts~\cite{OAI26,OD26,Cla26,Kin26}. The author is responsible for any errors.
+
+\begin{thebibliography}{DHM+14}
+\bibitem[AW15]{AW15} J.~Alman and R.~Williams. Probabilistic polynomials and Hamming nearest neighbors. In \emph{Proc.\ 56th IEEE FOCS}, 2015.
+\bibitem[AW17]{AW17} J.~Alman and R.~Williams. Probabilistic rank and matrix rigidity. In \emph{Proc.\ 49th ACM STOC}, 2017.
+\bibitem[Cla26]{Cla26} Claude (Anthropic). A $2^{o(n)}$ time algorithm for 3-SAT. Preprint, October 26, 2026. \url{https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/eth}.
+\bibitem[ETH26]{ETHblog} R.~Impagliazzo, R.~Paturi, and R.~Williams. ETH refutation: examination and discussion. Web site, October 2026. \url{https://ethdiscussion.blog/2026/10/26/eth-refutation-examination-and-discussion/}.
+\bibitem[IP01]{IP01} R.~Impagliazzo and R.~Paturi. On the complexity of $k$-SAT. \emph{J.\ Comput.\ System Sci.} 62(2):367--375, 2001.
+\bibitem[IPZ01]{IPZ01} R.~Impagliazzo, R.~Paturi, and F.~Zane. Which problems have strongly exponential complexity? \emph{J.\ Comput.\ System Sci.} 63(4):512--530, 2001.
+\bibitem[Kin26]{Kin26} S.~Kintali. A simplified proof of ETH is false. Manuscript, October 26, 2026. \url{https://shivakintali.github.io/papers/ETH.pdf}.
+\bibitem[MU21]{Lean4} L.~de Moura and S.~Ullrich. The Lean 4 theorem prover and programming language. In \emph{Proc.\ 28th CADE}, 2021.
+\bibitem[mC20]{Mathlib} The mathlib Community. The Lean mathematical library. In \emph{Proc.\ 9th ACM SIGPLAN CPP}, 2020.
+\bibitem[OAI26]{OAI26} OpenAI. The Exponential Time Hypothesis is false. Manuscript, October 17, 2026; revised October 25, 2026. \url{https://github.com/openai/math/blob/42907c9e999cc00d6abe7a50bfc1023250edd1b9/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf}.
+\bibitem[OAI26b]{OAIlean} OpenAI. Lean formalization accompanying ``The Exponential Time Hypothesis is false''. Repository, commit 4eaee87; see \texttt{lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/CompileSpace.lean}. \url{https://github.com/openai/math/tree/4eaee87548250b2682affda7d05d947c05554bae/lean}.
+\bibitem[O'D26]{OD26} R.~O'Donnell. Some exposition of ``The Exponential Time Hypothesis Is False''. Manuscript, October 30, 2026. \url{https://www.cs.cmu.edu/~odonnell/some_eth_false_exposition.pdf}.
+\end{thebibliography}
+\end{document}

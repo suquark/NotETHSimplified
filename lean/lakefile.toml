@@ -1,0 +1,29 @@
+name = "notETHSimplified"
+defaultTargets = ["OnePigeonhole", "UncrossingWires"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+
+[[require]]
+name = "openaiMachine"
+path = "third_party/openai-machine"
+
+[[lean_lib]]
+name = "TransposeBase"
+
+[[lean_lib]]
+name = "FormalizationKit"
+
+[[lean_lib]]
+name = "SatBase"
+
+[[lean_lib]]
+name = "UncrossingWires"
+
+[[lean_lib]]
+name = "OnePigeonhole"

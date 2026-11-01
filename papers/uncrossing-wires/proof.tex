@@ -1,0 +1,118 @@
+\documentclass[10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,microtype,xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newcommand{\val}{\mathrm{val}}
+\setlength{\emergencystretch}{2em}
+\setlength{\parskip}{3pt}
+\hypersetup{pdftitle={Uncrossing Wires for 3-SAT: A Potential That Closes the Recursion. The Proof},pdfauthor={Siyuan Zhuang}}
+\begin{document}
+\begin{center}
+{\Large Uncrossing Wires for 3-SAT: A Potential That Closes the Recursion}\par\smallskip{\large The Proof}\par\smallskip
+Siyuan Zhuang\par\smallskip
+\small OpenAI and Claude (Anthropic) first announced this theorem. This note gives a short proof. The ideas behind it, the comparison with earlier work and examples are in the \href{https://github.com/suquark/NotETHSimplified/blob/main/papers/uncrossing-wires/paper.pdf}{full paper}. The Lean~4 library \texttt{UncrossingWires} in the same repository formalizes the argument down to a multitape machine, with other constants and another proof of the branching step.
+\end{center}
+
+\begin{theorem}
+For each $\varepsilon>0$, 3-SAT with $n$ variables is decided deterministically in time $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$, where $|\varphi|$ is the size of the input $\varphi$.
+\end{theorem}
+
+\noindent A statement in square brackets stands for $1$ if it holds and $0$ otherwise, and $[K]=\{0,\dots,K-1\}$. \emph{Cauchy} is $(\sum_{i\in I}c_id_i)^2\le\sum_ic_i^2\sum_id_i^2$.
+
+\section{Networks}
+
+A \emph{network} has \emph{nodes} $s\in[K]$ and \emph{weights} $w(s,t)=w(t,s)\ge0$. A family $B$ has numbers $B(s,t)<2^{w(s,t)}$, and a \emph{node function} $F_s$ reads the numbers $B(s,\cdot)$; its values are dyadic rationals. The \emph{value} is
+\[
+\val(K,w,F)=\sum_{B}\ \prod_{s,t\in[K]}[B(s,t)=B(t,s)]\ \prod_{s\in[K]}F_s(B(s,\cdot)).
+\]
+The bits of $B(s,t)$ are the \emph{wires} between $s$ and $t$. The potential is $\Phi(K,w)=K(\sum_{s,t}w(s,t)^2)^{1/2}$. By Cauchy over the $K^2$ ordered pairs,
+\begin{equation}\label{ends}
+\sum_{s,t\in[K]}w(s,t)\le\Phi(K,w).
+\end{equation}
+
+\section{One rectangle}
+
+Let $x,y,u,v$ be bits, and $\hat p=(-1)^p$. Let $\chi_0(p,q)=\tfrac12(1+\hat p\hat q)$, $\chi_1(p,q)=\tfrac12(1-\hat p\hat q)$, $\chi_2(p,q)=\tfrac12(\hat p+\hat q)$, $\chi_3(p,q)=\tfrac12(\hat p-\hat q)$. So $\chi_0(p,q)=[p=q]$. Put $U=\chi_0(x,u)\chi_0(y,v)$ and $S=\chi_3(x,y)\chi_3(u,v)$. Then $[x=v][y=u]=U-S$, because both sides equal $\tfrac14(1+\hat x\hat v+\hat y\hat u+\hat x\hat y\hat u\hat v)$. Moreover, by expanding in the $\hat p$,
+\begin{align*}
+2U&=\sum_{c}\chi_c(x,y)\chi_c(u,v),\\
+2S&=\chi_0(x,u)\chi_0(y,v)-\chi_1(x,u)\chi_1(y,v)-\chi_2(x,u)\chi_2(y,v)+\chi_3(x,u)\chi_3(y,v).
+\end{align*}
+
+Now let $x,y,u,v$ be numbers of $m$ bits, and $U_j,S_j$ be $U,S$ at the bit $j$. Then $[x=v][y=u]=\prod_j(U_j-S_j)$. Multiplying out, with $T$ the set of positions that take $-S_j$, put
+\[
+P^{\mathrm r}=\sum_{|T|\ge m/2}\prod_{j\in T}(-S_j)\prod_{j\notin T}U_j,\qquad P^{\mathrm c}=\sum_{|T|<m/2}\prod_{j\in T}(-S_j)\prod_{j\notin T}U_j,
+\]
+so $P^{\mathrm r}+P^{\mathrm c}=[x=v][y=u]$. For $\pi\in\{0,1,2,3\}^m$ let $f_\pi(p,q)=\prod_j\chi_{\pi_j}(p_j,q_j)$.
+
+\begin{lemma}\label{lem:seed}
+Let $m=0$, or $m=2k+1$. Put $\beta_0=0$ and $\beta_{2k+1}=2k+1+\lceil8k/5\rceil$. Each of $P^{\mathrm r},P^{\mathrm c}$ is a sum over an index $\xi$ of products $g_\xi(x,y)g'_\xi(u,v)$, and also a sum over an index $\xi$ of products $g_\xi(x,u)g'_\xi(y,v)$. Across $x,y\mid u,v$, the index has $\beta_m$ bits for $P^{\mathrm r}$ and $2m$ bits for $P^{\mathrm c}$. Across $x,u\mid y,v$, it has $2m$ bits for $P^{\mathrm r}$ and $\beta_m$ bits for $P^{\mathrm c}$. All values are dyadic with $O(m+1)$ bits, computed in time polynomial in $m$.
+\end{lemma}
+\begin{proof}
+For $m=0$: $P^{\mathrm r}=1$ and $P^{\mathrm c}=0$. Let $m=2k+1$, and fix $T$. Across $x,y\mid u,v$, use $S_j$ as it is, and the expansion of $2U_j$: the product of $T$ is $(-1)^{|T|}2^{|T|-m}$ times the sum of $f_\pi(x,y)f_\pi(u,v)$ over the $\pi$ with the letter $3$ on $T$. Across $x,u\mid y,v$, use $U_j$ as it is, and the expansion of $2S_j$: the product of $T$ is $2^{-|T|}$ times a signed sum of $f_\pi(x,u)f_\pi(y,v)$ over the $\pi$ with the letter $0$ off $T$. So each piece is $\sum_\pi c_\pi f_\pi f_\pi$ across either cut. A set $T$ that fits $\pi$ contributes a sign and a power of two that depend only on $|T|$ and $\pi$, and the fitting sets of one size are counted by one binomial, so $c_\pi$ is a sum of at most $m+1$ binomials times signed powers of two. For $2m$ bits, name $\pi$ with two bits per letter. For $\beta_m$ bits: in $P^{\mathrm r}$ we have $|T|\ge k+1$, so across $x,y\mid u,v$ the string $\pi$ has at most $k$ letters other than $3$; in $P^{\mathrm c}$ we have $|T|\le k$, so across $x,u\mid y,v$ it has at most $k$ letters other than $0$. Then $m$ bits mark the positions of the special letter, and $\lceil8k/5\rceil$ bits hold a number below $3^k$ with the other letters as base $3$ digits; this fits because $3^{5k}=243^k\le256^k=2^{8k}\le2^{5\lceil8k/5\rceil}$. Other indexes get the zero function.
+\end{proof}
+
+\section{One step}
+
+Let $(K'K',w,F)$ be a network, with nodes $(a,b)$, $a,b\in[K']$. Rows $a<a'$ and columns $b<b'$ define a \emph{rectangle} $\rho$, with \emph{diagonals} $\{(a,b),(a',b')\}$ and $\{(a,b'),(a',b)\}$ of weights $w_1,w_2$. Let $m_\rho$ be the largest odd number at most $\min(w_1,w_2)$, or $0$ if the minimum is $0$. The lowest $m_\rho$ bits of the numbers on the diagonals are \emph{paired}: with
+\[
+x=B((a,b),(a',b')),\quad v=B((a',b'),(a,b)),\quad y=B((a,b'),(a',b)),\quad u=B((a',b),(a,b')),
+\]
+modulo $2^{m_\rho}$, their tests are the crossing $[x=v][y=u]$. All other bits are \emph{carried}. A \emph{choice} $\sigma$ picks one piece $P_\rho\in\{P^{\mathrm r},P^{\mathrm c}\}$ for each rectangle. There are at most $K'^4/4$ rectangles. For fixed $B$,
+\begin{equation}\label{expand}
+\prod_{s,t}[B(s,t)=B(t,s)]=\sum_\sigma\ \prod_{s,t}[\text{the carried bits of $B(s,t)$ and $B(t,s)$ agree}]\ \prod_\rho P_\rho.
+\end{equation}
+
+Fix $\sigma$. Let $d^{\mathrm r}_\rho$ be $\beta_{m_\rho}$ if $P_\rho=P^{\mathrm r}$ and $2m_\rho$ otherwise, and $d^{\mathrm c}_\rho$ be $\beta_{m_\rho}$ if $P_\rho=P^{\mathrm c}$ and $2m_\rho$ otherwise. Build a network on the $K'$ rows. Between rows $a<a'$, it has new wires: for all columns $b,b'$, a copy of the carried bits between $(a,b)$ and $(a',b')$, which the node $a$ tests against $B((a,b),(a',b'))$ and the node $a'$ against $B((a',b'),(a,b))$; and for all $\rho$ with these rows, the $d^{\mathrm r}_\rho$ bits of the index $\xi$ of $\rho$, with the factor $g_\xi(x,y)$ at $a$ and $g'_\xi(u,v)$ at $a'$. So $w^{\mathrm r}(a,a)=0$ and
+\begin{equation}\label{wrow}
+w^{\mathrm r}(a,a')=\sum_bw((a,b),(a',b))+\sum_{b<b'}f^{\mathrm r}_\rho,\qquad f^{\mathrm r}_\rho=w_1+w_2-2m_\rho+d^{\mathrm r}_\rho.
+\end{equation}
+The new node function sums over the old numbers on the row $a$:
+\begin{equation}\label{newF}
+F^{\mathrm r}_a(B')=\sum_{B}\ \mathsf T_a\ \prod_{b}F_{(a,b)}(B((a,b),\cdot)),
+\end{equation}
+where $\mathsf T_a$ is the product of these tests and factors, for all other rows, and of the tests $B(s,t)=B(t,s)$ for two nodes $s,t$ of the row $a$. In the same way we get a network $(K',w^{\mathrm c},F^{\mathrm c})$ on the columns, with the factors $g_\xi(x,u)$ and $g'_\xi(y,v)$ across the columns, and $f^{\mathrm c}_\rho=w_1+w_2-2m_\rho+d^{\mathrm c}_\rho$.
+
+\begin{lemma}\label{lem:step}
+For each $\sigma$ pick the network on the rows or on the columns. Then $\val(K'K',w,F)$ is the sum over $\sigma$ of the values of the picked networks.
+\end{lemma}
+\begin{proof}
+Insert~\eqref{newF} in the value of the network on the rows and reorder the sums. For fixed old $B$, the new numbers split into independent parts. The tests of the new network leave one new number for each pair $a<a'$. A part that copies carried bits has two tests, and its sum is the test that those bits agree. The index of $\rho$ gives $\sum_\xi g_\xi(x,y)g'_\xi(u,v)=P_\rho$. The tests inside a row are the tests of the carried bits for pairs in one row. So we get the summand of~\eqref{expand}. The columns are the same.
+\end{proof}
+
+\section{The potential}
+
+\begin{lemma}\label{lem:phi}
+Let $\gamma=\sqrt{24/25}$. For every $\sigma$, $\min(\Phi(K',w^{\mathrm r}),\Phi(K',w^{\mathrm c}))\le\gamma\,\Phi(K'K',w)$.
+\end{lemma}
+\begin{proof}
+Write each $f^{\mathrm r}_\rho$ in~\eqref{wrow} as $\frac12f^{\mathrm r}_\rho+\frac12f^{\mathrm r}_\rho$. Then~\eqref{wrow} has $K'^2$ terms, so by Cauchy $w^{\mathrm r}(a,a')^2\le K'^2(\sum_{b<b'}\tfrac12(f^{\mathrm r}_\rho)^2+\sum_bw((a,b),(a',b))^2)$. Sum over the ordered pairs $a\ne a'$, multiply by $K'^2$, and do the same for the columns:
+\[
+\Phi(K',w^{\mathrm r})^2+\Phi(K',w^{\mathrm c})^2\le K'^4\Bigl(\sum_{\rho}\bigl((f^{\mathrm r}_\rho)^2+(f^{\mathrm c}_\rho)^2\bigr)+\sum_{s\ne t\text{ in one row or one column}}w(s,t)^2\Bigr).
+\]
+Fix $\rho$, with $w_1\ge w_2$ and $m=m_\rho$. One of $d^{\mathrm r}_\rho,d^{\mathrm c}_\rho$ is $2m$, which gives $f=w_1+w_2$. The other is $\beta_m$, which gives $f\le w_1+\frac9{10}w_2$: if $m=0$ then $w_2=0$; if $m=2k+1$ then $10(f-w_1)\le10(w_2-m)+16k+8$, and $w_2\in\{2k+1,2k+2\}$ gives $16k+8\le9w_2$ or $16k+18\le9w_2$. By Cauchy, $(f^{\mathrm r}_\rho)^2+(f^{\mathrm c}_\rho)^2\le(2+1+\frac{81}{100})(w_1^2+w_2^2)\le\frac{96}{25}(w_1^2+w_2^2)$, and $w_1^2+w_2^2$ is half of the sum of $w(s,t)^2$ over the four ordered pairs of $\rho$. So the right side above is at most $\frac{48}{25}K'^4\sum_{s,t}w(s,t)^2=\frac{48}{25}\Phi(K'K',w)^2$, and the smaller potential has a square at most half of this.
+\end{proof}
+
+\section{The chain}
+
+Let $\ell\ge0$ and $K_j=2^{2^{\ell-j}}$, so $K_{\ell}=2$ and $K_j=K_{j+1}K_{j+1}$.
+
+\begin{theorem}\label{thm:net}
+Let $(K_0,w,F)$ be a network with potential $\Phi$. Then $\val(K_0,w,F)$ is computed in time $2^{K_0^2/3+4\gamma^{\ell}\Phi}$ times a constant depending on $\ell$, times a polynomial in $\Phi$ and the time and the bit length of one evaluation of a node function.
+\end{theorem}
+\begin{proof}
+Put $N_0=(K_0,w,F)$. Given $N_j$, pick a choice $\sigma_j$, and let $N_{j+1}$ be the one of its two networks with the smaller potential, and the rows if equal. By Lemma~\ref{lem:step}, $\val(N_0)$ is the sum of $\val(N_{\ell})$ over all chains $(\sigma_j)_j$. By Lemma~\ref{lem:phi}, $\Phi(N_j)\le\gamma^j\Phi$. The network $N_j$ has at most $K_j^2/4$ rectangles, and these numbers fall at least by a factor $4$, so there are at most $2^{K_0^2/3}$ chains. For one chain, computing the weights takes polynomial time and fixes which networks are kept, since a comparison of potentials is a comparison of sums of squares. By~\eqref{ends} a family of $N_{\ell}$ has at most $\gamma^{\ell}\Phi$ bits.
+
+A node function of $N_{j+1}$ is~\eqref{newF}, a sum over numbers with $\sum_b\sum_tw((a,b),t)$ bits, a sum of $K_{j+1}^3$ weights of $N_j$. By Cauchy its square is at most $K_{j+1}^3\sum_{s,t}w(s,t)^2=\Phi(N_j)^2/K_{j+1}$, so there are at most $E_j=\gamma^j\Phi/\sqrt{K_{j+1}}$ bits. Each term has one evaluation of $\mathsf T$ and $K_{j+1}$ evaluations of node functions of $N_j$. So one evaluation of a node function of $N_{\ell}$ takes at most $\prod_{j<\ell}(K_{j+1}2^{E_j})$ evaluations of node functions of $N_0$ and as many of $\mathsf T$. For $r=\ell-j\ge1$ we have $\sqrt{K_{j+1}}=2^{2^{r-2}}\ge2^{r-1}$, so $\sum_{j<\ell}E_j\le\gamma^{\ell}\Phi\sum_{r\ge1}\gamma^{-r}2^{1-r}=2\gamma^{\ell}\Phi/(2\gamma-1)\le3\gamma^{\ell}\Phi$. Multiplying: $2^{K_0^2/3}$ chains, $2^{\gamma^{\ell}\Phi}$ families, and $2^{3\gamma^{\ell}\Phi}$ evaluations. By Lemma~\ref{lem:seed}, $\mathsf T$ takes polynomial time. The number of wires never grows, since $\lceil8k/5\rceil\le2k$ gives $\beta_m\le2m$, so it is at most $\Phi$. If the values at level $j$ have $b_j$ bits, then $b_{j+1}\le E_j+K_{j+1}b_j+O(\sum_\rho(m_\rho+1))$, so all values have polynomially many bits.
+\end{proof}
+
+\section{Proof of the theorem}
+
+Fix $\varepsilon>0$. By the sparsification lemma of Impagliazzo, Paturi and Zane (\emph{J.\ Comput.\ System Sci.}\ 63 (2001), p.~513), there is $\Delta\ge3$ such that a CNF on $n$ variables with at most three literals per clause is satisfiable if and only if one of at most $2^{\varepsilon n/2}$ such CNFs is, each with at most $\Delta$ occurrences per variable, computed in time $2^{\varepsilon n/2}$ times a polynomial. Take $\ell$ with $16\Delta\gamma^\ell\le\varepsilon/2$, and $K=2^{2^\ell}$. Take one formula $\Psi$. Reject it if it has an empty clause, and delete tautologies and repeated literals. An \emph{occurrence} is a pair $(i,C)$ of a variable $i$ and a clause $C$ containing it; there are at most $\Delta n$.
+
+\emph{Placement.} Number the variables $0,\dots,n-1$, and let $\omega(i)=i$ modulo $K$, so a node holds at most $(n+K)/K$ variables and $\Delta(n+K)/K$ occurrences. Going through the clauses, let $\mathrm{load}(s,t)$ count the occurrences $(i,C)$ placed so far with $\omega(i)=s$, $\omega(C)=t$, and put $C$ on the node $t$ that minimizes $\sum_{i\in C}\mathrm{load}(\omega(i),t)$. Summed over all $t$ this is at most $3\Delta(n+K)/K$, so its minimum is at most $3\Delta(n+K)/K^2$, and placing $C$ adds at most $3\le\Delta$. So all loads are at most $\kappa=\Delta(3n+4K^2)/K^2$.
+
+\emph{Network.} Each occurrence $o=(i,C)$ is a wire between $\omega(i)$ and $\omega(C)$, with a bit $\theta_o$ in $B(\omega(i),\omega(C))$. The function $F_s$ is the product of the tests that $\theta_o$ is the same for all occurrences of each variable $i$ with $\omega(i)=s$, and that each clause $C$ with $\omega(C)=s$ is true when each literal reads the bit of its occurrence. Then $\val(K,w,F)$ counts the satisfying assignments of the variables that occur, so it is positive if and only if $\Psi$ has a solution. Since $w(s,t)\le\mathrm{load}(s,t)+\mathrm{load}(t,s)\le2\kappa$ and $\sum_{s,t}w(s,t)\le2\Delta n$, we get $\Phi(K,w)^2\le K^2\cdot2\kappa\cdot2\Delta n=4\Delta^2n(3n+4K^2)\le(4\Delta(n+K^2))^2$. Theorem~\ref{thm:net} gives time $2^{K^2/3+16\Delta\gamma^\ell(n+K^2)}$ times a constant and a polynomial, which is at most a constant times $2^{\varepsilon n/2}$ and a polynomial; here $n\le|\varphi|$, since the input declares its variables. Multiplying by the number of formulas proves the theorem.\qed
+\end{document}

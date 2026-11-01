@@ -1,0 +1,102 @@
+\documentclass[10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,microtype,xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newcommand{\bits}{\{0,1\}}
+\setlength{\emergencystretch}{2em}
+\setlength{\parskip}{3pt}
+\hypersetup{pdftitle={One Pigeonhole for 3-SAT: A Determinant That Removes the Correction. The Proof},pdfauthor={Siyuan Zhuang}}
+\begin{document}
+\begin{center}
+{\Large One Pigeonhole for 3-SAT: A Determinant That Removes the Correction}\par\smallskip{\large The Proof}\par\smallskip
+Siyuan Zhuang\par\smallskip
+\small OpenAI and Claude (Anthropic) first announced this theorem. This note gives a short proof. The ideas behind it, the comparison with earlier work, a worked example, and limits are in the \href{https://github.com/suquark/NotETHSimplified/blob/main/papers/one-pigeonhole/paper.pdf}{full paper}. The Lean~4 library \texttt{OnePigeonhole} in the same repository formalizes this proof down to a multitape machine, in a network form, with other parameters, with a branching tree in place of the citation of the sparsification lemma, and with a table in place of determinant code.
+\end{center}
+
+\begin{theorem}
+For every $\varepsilon>0$, 3-SAT on $n$ variables is decided deterministically in time $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$, where $|\varphi|$ is the size of the input $\varphi$.
+\end{theorem}
+
+\section{The formula}
+
+Fix $\Delta\ge3$ and an integer $m\ge\max(60,\Delta)$, and put $Q=m^4$, $R=m^3$, $L=6Q$, $K=L^Q$. Take a formula with at most three literals per clause, $n$ variables and at most $\Delta$ occurrences per variable, so with $M\le\Delta n$ occurrences. Put $r=\Delta n/m$. We count its solutions. If $n<K^2$, enumerate.
+
+Each occurrence $j$ has a bit $x_j$, which is $1$ if the literal of $j$ is false, and a free bit $y_j$. Then
+\begin{equation}\label{count}
+\#\text{solutions}=\sum_{\text{variables}}\ \sum_{y}\ \prod_e\Bigl(1-\prod_{j\in e}y_j\Bigr)\ \prod_j\mathbf 1[x_j=y_j].
+\end{equation}
+
+\emph{Words.} Words are $[L]^Q$. Give the variables words $s(v)$ cyclically. Since $n\ge K^2$, a word has at most $2n/K$ variables and $2\Delta n/K$ occurrences. Let the \emph{load} of $(u,w)$ be the number of occurrences placed so far of variables with the word $u$ in clauses with the word $w$. For fixed $u$, the loads sum over $w$ to at most $2\Delta n/K$. Going through the clauses, give the clause $e$ a word $o(e)$ that differs in every digit from the words of its variables; at least $(L-3)^Q\ge K(1-3Q/L)=K/2$ words do. Among these, take the word $w$ with the least sum of $\mathrm{load}(s(v),w)$ over the variables $v$ of $e$. This sum has average at most $3(2\Delta n/K)/(K/2)=12\Delta n/K^2$, and $e$ adds at most $3\le\Delta n/K^2$ to a load. So all loads are at most $h=\lceil13\Delta n/K^2\rceil$.
+
+\emph{Cells.} A \emph{cell} is $(u,w,\lambda)$ with words $u,w$ that differ in every digit and $\lambda\in[h]$. There are $N\le K^2h\le14\Delta n$ cells. Since loads are at most $h$, each occurrence $j$ of $v$ in $e$ gets its own cell $c_j=(s(v),o(e),\lambda)$. Put $d_j=(o(e),s(v),\lambda)$.
+
+\section{The window}
+
+For $E\subseteq[Q]$, let $\tau_E$ exchange the letters of the two words of a cell in the digits of $E$. So $\tau_{[Q]}c_j=d_j$ and $\tau_E\tau_F=\tau_{E+F}$, with $E+F$ the symmetric difference. Since the two words differ in every digit, the cells $\tau_Ec$ for different $E$ are different.
+
+\begin{lemma}\label{lem:window}
+There are rationals $\kappa_E$, $|E|\le R$, and functions $\alpha_l,f_l$ on cells, with at most $N/m^2$ indices $l$, such that for all cells $c,d$
+\[
+\sum_{|E|\le R}\kappa_E\mathbf 1[\tau_Ec=d]-\mathbf 1[\tau_{[Q]}c=d]=\sum_l\alpha_l(c)f_l(d).
+\]
+\end{lemma}
+\begin{proof}
+Put $b=2^Q$. For $\sigma\in\{\pm1\}^Q$ put $\sigma^E=\prod_{t\in E}\sigma_t$. Then $\sigma^E\sigma^F=\sigma^{E+F}$, and $\sum_\sigma\sigma^E$ is $b$ if $E=\varnothing$ and $0$ otherwise. If $\sigma$ has $k$ minus signs, then $\sigma^{[Q]}=(-1)^k$ and $\sum_t\sigma_t=Q-2k$. Let $p$ be a polynomial of degree at most $R$ with $p(k)=(-1)^k$ on the at most $R+1$ integers $k$ with $|Q-2k|\le R$. Put $k=\sum_t(1-\sigma_t)/2$ in $p$, expand, and use $\sigma_t^2=1$. This gives $\kappa_E$ such that $\rho_\sigma:=\sum_{|E|\le R}\kappa_E\sigma^E-\sigma^{[Q]}$ is $0$ unless $|\sum_t\sigma_t|>R$. Call such $\sigma$ \emph{exceptional}. Since $\sum_\sigma(\sum_t\sigma_t)^2=bQ$, at most $bQ/R^2=b/m^2$ vectors $\sigma$ are exceptional.
+
+The \emph{cube} of a cell $c_0$ is the set of the $b$ cells $\tau_Fc_0$. The cubes partition the cells, so there are $N/b$ cubes. Choose a base cell $c_0$ in each cube. If $c=\tau_Fc_0$ and $d=\tau_{F'}c_0$, then for every $E$ we have $\mathbf 1[\tau_Ec=d]=\mathbf 1[E+F+F'=\varnothing]=b^{-1}\sum_\sigma\sigma^E\sigma^F\sigma^{F'}$. So the left side of the lemma is $b^{-1}\sum_\sigma\rho_\sigma\sigma^F\sigma^{F'}$, a sum over exceptional $\sigma$. If $c,d$ lie in different cubes, the left side is $0$. So take as indices the pairs $l$ of a cube and an exceptional $\sigma$, with $\alpha_l(\tau_Fc_0)=\rho_\sigma\sigma^F/b$ and $f_l(\tau_{F'}c_0)=\sigma^{F'}$ on this cube, and both functions $0$ outside it. There are at most $(N/b)(b/m^2)=N/m^2$ indices.
+\end{proof}
+
+\section{Trading and the pigeonhole}
+
+Fix values of all bits. Let $A,D$ be the $M\times M$ matrices with
+\[
+A_{ij}=\sum_{|E|\le R}\kappa_E\mathbf 1[\tau_Ec_i=d_j]\,\mathbf 1[x_i=y_j],\qquad D_{ij}=\mathbf 1[\tau_{[Q]}c_i=d_j]\,\mathbf 1[x_i=y_j].
+\]
+Since $\tau_{[Q]}c_i=d_i$ and the cells $d_j$ are different, $D$ is diagonal and $\det D=\prod_j\mathbf 1[x_j=y_j]$. By Lemma~\ref{lem:window}, $(A-D)_{ij}=\sum_l\alpha_l(c_i)f_l(d_j)\mathbf 1[x_i=y_j]$. So every row of $A-D$ lies in the span of the at most $2N/m^2$ vectors $(f_l(d_j)\mathbf 1[\beta=y_j])_j$, $\beta\in\bits$, and $2N/m^2\le28\Delta n/m^2\le r$.
+
+Expand $\det D=\det(A-(A-D))$ by linearity in the rows. For a set $T$ of rows, let $\langle T\rangle$ have the rows in $T$ from $A-D$ and the other rows from $A$. More than $r$ rows of $A-D$ are dependent, so
+\begin{equation}\label{trade}
+\prod_j\mathbf 1[x_j=y_j]=\sum_{|T|\le r}(-1)^{|T|}\det\langle T\rangle.
+\end{equation}
+
+Fix $T$. An entry $(i,j)$ of $\langle T\rangle$ can be nonzero only if $\tau_Ec_i=d_j$ for some $E$; this $E$ is unique, and we call it $E_{ij}$. In a row outside $T$, a nonzero entry has $|E_{ij}|\le R$. In a row in $T$, it has $|E_{ij}|\le R$ or $E_{ij}=[Q]$. Let $z_1,\dots,z_Q$ be formal variables, and let $\langle T\rangle_z$ be $\langle T\rangle$ with each entry $(i,j)$ multiplied by $\prod_{t\in E_{ij}}z_t$. In the expansion of $\det\langle T\rangle_z$ over permutations, a permutation $\pi$ gives a monomial $z^a$ in which $a_t$ is the number of rows $i$ with $t\in E_{i\pi(i)}$. So
+\[
+\sum_ta_t=\sum_i|E_{i\pi(i)}|\le MR+|T|Q\le\Delta nR+rQ=2rQ,
+\]
+since $R=Q/m$, and some $a_t\le2r$. For a polynomial $f$ in $z$, let $\operatorname{Sum}_t(f)$ be the sum of its coefficients at the monomials $z^a$ with $a_t\le2r$, and $a_{t'}>2r$ for $t'<t$. Each monomial of $\det\langle T\rangle_z$ is counted for exactly one $t$, and the sum of all its coefficients is $\det\langle T\rangle$. So $\det\langle T\rangle=\sum_t\operatorname{Sum}_t(\det\langle T\rangle_z)$.
+
+Fix $t$. For a set $S$ of rows, let $H_{T,t,S}$ be $\langle T\rangle_z$ with only these entries kept: in the rows of $S$ those with $t\in E_{ij}$, and in the other rows those with $t\notin E_{ij}$. By linearity in the rows, $\det\langle T\rangle_z=\sum_S\det H_{T,t,S}$. Each monomial of $\det H_{T,t,S}$ has $a_t=|S|$, so $\operatorname{Sum}_t(\det H_{T,t,S})=0$ for $|S|>2r$. Hence
+\begin{equation}\label{sum}
+\prod_j\mathbf 1[x_j=y_j]=\sum_{|T|\le r}(-1)^{|T|}\sum_t\ \sum_{|S|\le2r}\operatorname{Sum}_t\bigl(\det H_{T,t,S}\bigr).
+\end{equation}
+
+\section{The determinant across a digit}
+
+Equation~\eqref{sum} holds for all values of the bits. Now let the bits vary. Fix $T,t,S$ and $H=H_{T,t,S}$. Then $H_{ij}=\gamma_{ij}\mathbf 1[x_i=y_j]$, where $\gamma_{ij}$ is zero or a rational times a monomial in $z$, and does not depend on the bits. For an occurrence $i$ of $v$ in $e$, let $s_i,o_i$ be the letters of $s(v),o(e)$ at digit $t$. If $\gamma_{ij}\ne0$, comparing first words at digit $t$ in $\tau_{E_{ij}}c_i=d_j$ gives $o_j=s_i$ if $t\notin E_{ij}$, and $o_j=o_i$ if $t\in E_{ij}$; and $t\in E_{ij}$ exactly when $i\in S$. So with $g_i=s_i$ for $i\notin S$, and $g_i=o_i$ for $i\in S$,
+\begin{equation}\label{nonzero}
+\gamma_{ij}\ne0\quad\Longrightarrow\quad o_j=g_i.
+\end{equation}
+The \emph{bits of a letter $g$} are the variables $v$ with $s(v)_t=g$ and the bits $y_j$ with $o_j=g$. Each bit belongs to exactly one letter. For $\xi\in\bits^S$, let $H^\xi$ be $H$ with $x_i$ replaced by the number $\xi_i$ for $i\in S$. Then $\det H=\sum_\xi\det H^\xi\prod_{i\in S}\mathbf 1[x_i=\xi_i]$.
+
+Let $H^\xi_g$ be the submatrix of $H^\xi$ with the rows that have $g_i=g$ and the columns that have $o_j=g$. By~\eqref{nonzero}, all entries of $H^\xi$ outside these submatrices are $0$. An entry of $H^\xi_g$ reads $y_j$ with $o_j=g$ and, if $i\notin S$, reads $x_i$ with $s_i=g$, so it reads only bits of $g$. Call $S$ \emph{balanced} if every $H^\xi_g$ is square; this depends only on $t,S$. There are $M$ rows and $M$ columns, so if $S$ is not balanced, some $H^\xi_g$ has more rows than columns. These rows are dependent, and $\det H^\xi=0$. If $S$ is balanced, listing the rows and the columns by letter makes $H^\xi$ block diagonal, so $\det H^\xi=\operatorname{sgn}(t,S)\prod_g\det H^\xi_g$, with a sign that depends only on $t,S$. Put
+\[
+\Psi_g=\prod_{i\in S:\,s_i=g}\mathbf 1[x_i=\xi_i]\ \prod_{e:\,o(e)_t=g}\Bigl(1-\prod_{j\in e}y_j\Bigr)\ \det H^\xi_g,
+\]
+a polynomial in $z$ whose coefficients depend only on the bits of $g$. Over all $g$, each indicator and each clause factor appears exactly once. So the sum of $\prod_g\Psi_g$ over all bits equals $\prod_g\sum_{\text{bits of }g}\Psi_g$. With~\eqref{count},~\eqref{sum} and the linearity of $\operatorname{Sum}_t$, this gives
+\begin{equation}\label{final}
+\#\text{solutions}=\sum_{|T|\le r}(-1)^{|T|}\sum_t\ \sum_{\substack{|S|\le2r\\S\text{ balanced}}}\operatorname{sgn}(t,S)\sum_{\xi\in\bits^S}\operatorname{Sum}_t\Bigl(\prod_g\ \sum_{\text{bits of }g}\Psi_g\Bigr).
+\end{equation}
+
+\section{The cost and the end of the proof}
+
+We evaluate~\eqref{final}. Since $M/m\le r$, for every $q>0$ we have $\sum_{k\le qr}\binom Mk\le m^{qr}\sum_k\binom Mkm^{-k}=m^{qr}(1+1/m)^M\le m^{qr}\mathrm e^r$. So there are at most $(\mathrm em)^r$ sets $T$ and at most $4^r(\mathrm em^2)^r$ pairs $(S,\xi)$, so at most $(4\mathrm e^2m^3)^r$ triples $(T,S,\xi)$.
+
+A letter $g$ is the letter at digit $t$ of $K/L$ words, so it has at most $2n/L$ variables. At most $K^2h/L\le14\Delta n/L$ cells have the letter $g$ at digit $t$ of the first word, and the cells $d_j$ are different, so $g$ has at most $14\Delta n/L$ bits $y_j$. So $g$ has at most $2^{16\Delta n/L}\le2^{n/m}$ assignments, since $L=6m^4$ and $\Delta\le m$.
+
+The numbers $\kappa_E$ depend only on $m$. All polynomials have exponents at most $M$ in each $z_t$, so they have at most $(M+1)^Q$ monomials, with coefficients of polynomially many bits, and a determinant of such polynomials is found from its values at $(M+1)^Q$ points. So one $\Psi_g$, the product over the $L$ letters, one $\operatorname{Sum}_t$, and the words and signs each take time polynomial in $n$, with degree depending on $m$, and this is at most $C_m2^{n/m}$. Multiply by the triples, the $Q$ digits, the $L$ letters and their assignments. Since $2n/m\le r$ and $8\mathrm e^2<60\le m$, one formula takes time at most $C_m(8\mathrm e^2m^3)^r\le C_mm^{4r}=C_m2^{4\Delta n\log_2m/m}$ times a polynomial.
+
+Fix $\varepsilon>0$. By the sparsification lemma of Impagliazzo, Paturi and Zane (\emph{J.\ Comput.\ System Sci.}\ 63 (2001), p.~513), there is $\Delta\ge3$ such that a 3-CNF on $n$ variables is satisfiable if and only if one of at most $2^{\varepsilon n/2}$ 3-CNFs is, each with at most $\Delta$ occurrences per variable, computed in time $2^{\varepsilon n/2}$ times a polynomial. Choose $m\ge\max(60,\Delta)$ with $4\Delta\log_2m/m\le\varepsilon/2$. For each of these formulas, run the algorithm above. The 3-CNF is satisfiable if and only if one of them has a solution, and the total time is at most $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$.\qed
+\end{document}

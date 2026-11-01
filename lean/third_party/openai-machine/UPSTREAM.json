@@ -1,0 +1,340 @@
+{
+  "repository": "https://github.com/openai/math",
+  "commit": "4eaee87548250b2682affda7d05d947c05554bae",
+  "license": "Apache-2.0",
+  "upstream_lean": "leanprover/lean4:v4.34.1",
+  "local_lean": "leanprover/lean4:v4.33.1",
+  "entry_module": "OAI.Algorithms.SubexponentialSAT.SqrtLogSpace.CompileSpace",
+  "modifications": [
+    "LeanCompat: narrow imports and provide ite/dite simplifier-name aliases for Lean 4.33.1.",
+    "BitProgramCompile: finish Boolean branches with simp_all instead of definitional equality.",
+    "CounterPrograms: solve every convert goal and normalize Nat.mul_add in two restore traces.",
+    "WeightedSupport: unfold MvPolynomial.coeff in the coefficient-filter lemma."
+  ],
+  "files": [
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ArrayPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ArrayPrograms.lean",
+      "upstream_git_blob": "66081f2b7d91c8bd3e2d43ea9db20347f763003a",
+      "local_sha256": "59c0b3eefbf8a8f1b7ccddc1520ebdc9027ae8008dc12ad09a86e8623bc50e2b",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ArrayUpdatePrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ArrayUpdatePrograms.lean",
+      "upstream_git_blob": "dca0cba91b243c4e286c5f7a977ee84cdcfc585d",
+      "local_sha256": "f6024661c04095810aa13dd42548ef155d3238072f36b69b893f009b29bb20ba",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BinaryArithmetic.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BinaryArithmetic.lean",
+      "upstream_git_blob": "d0e68bf4bda1c34464e5e25f08e8f51d3ba6f66d",
+      "local_sha256": "f56b0c23b86328411eb017627b929e820735a963a09ba1c230b88b7d44faa8dd",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BinaryPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BinaryPrograms.lean",
+      "upstream_git_blob": "ab8a858c2466aa3879087f825802aa76c7aa768f",
+      "local_sha256": "c8b0bb2cfee30ea20d53aa156884f923feebeab64676ba805871802eea73570f",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BitProgram.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BitProgram.lean",
+      "upstream_git_blob": "b5f18adbb17da725e5401649f6e8b01516a47048",
+      "local_sha256": "decf2653b39b8a6e21e5e49390c191e1b79e98d2d1f286ce1e05590dd881ce86",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BitProgramCompile.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BitProgramCompile.lean",
+      "upstream_git_blob": "fe1972b7e8019e79b4f733042076028e09d55ab8",
+      "local_sha256": "66e01a1c14a2902c43c03d991342124da1ce4304cfceafc720fe032359b09bb1",
+      "modified": true
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BitProgramSelectedSpace.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BitProgramSelectedSpace.lean",
+      "upstream_git_blob": "0cf197ae33555f360ce8bb9f10d57eec4a6d68db",
+      "local_sha256": "0a4648c1fbc6394f5a1438af393b9e386976f5824422b1b395cbf9d80cb5dcc9",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BitProgramSpace.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BitProgramSpace.lean",
+      "upstream_git_blob": "62c7572d4ef6fe7366c4d231132a6ad36cd504b1",
+      "local_sha256": "0d5b0f1ec56471800cb78721752dd4f8ce3dbd776ecb0c80b9a48924953081af",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/BooleanPacking.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/BooleanPacking.lean",
+      "upstream_git_blob": "48f735f44cb3326437472fb3d7b844e82ad1e0e2",
+      "local_sha256": "8151a700a8fc8780d243aed272b3165e67f866c7a8ecc870bdbfb35348a7fb8f",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/Computation.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/Computation.lean",
+      "upstream_git_blob": "032cb278c5044f238432458b09e9ee3122d96354",
+      "local_sha256": "c902d09be040c39b0266f13b16b900474df5ce419de83e092e9485ae3b84cd34",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/CounterForPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/CounterForPrograms.lean",
+      "upstream_git_blob": "a81a8a0bbb3020f60488d79205a46b515c4ea3a5",
+      "local_sha256": "c1efc0d0709f3832ac6676231b3a6d87c3b4934e62a0cc131d77e5f82b5501df",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/CounterPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/CounterPrograms.lean",
+      "upstream_git_blob": "5e22b28bfa71635b25b35a2e97295ec8705b678c",
+      "local_sha256": "8e5303ea0369300007bafadf12859212b65f3e69bc5cc68c41c764123c55f75f",
+      "modified": true
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/CounterWidth.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/CounterWidth.lean",
+      "upstream_git_blob": "e174563dca28fcf74706729484437269d99e3e20",
+      "local_sha256": "1af874a6899378a1eab2f47e1b75944223a8a3ac57f976fdcc1fae0061e8ff78",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/Encoding.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/Encoding.lean",
+      "upstream_git_blob": "684229598d06d381ae27e4ca70421a46786deeca",
+      "local_sha256": "6875b913ebc1583e30f3a4f87dd547a94c7f73a279b6963110c613467c4efe6c",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/FixedParameters.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/FixedParameters.lean",
+      "upstream_git_blob": "adfd3d9d582264482486e0d5e4e01ef2b7fdd091",
+      "local_sha256": "7290e0839f540bf9398be9414bf5b321873a256305608541140b3a215cac7bac",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/LeanCompat.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/LeanCompat.lean",
+      "upstream_git_blob": "5cc5966acfe65c8ef4ca5c8a4726d9a0a8fa1bdd",
+      "local_sha256": "c36fd5c48ff9a4ae5c513426ddef74bca3eb7eeb08a296f6c2d42e7cd24b7bbc",
+      "modified": true
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/LiftRing.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/LiftRing.lean",
+      "upstream_git_blob": "89a178121884b54065c68ab1e755391b5a1f8d89",
+      "local_sha256": "2e959228a2da5307ec628891fd7357348c8dfeb294ffe4b79a19d5822bc123fa",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ListRegisterProgram.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ListRegisterProgram.lean",
+      "upstream_git_blob": "b74b8e2fe657418e17fc685415a3cb2aa8471985",
+      "local_sha256": "c504b04328b6d281bb83406771d032556a877f08f936224f2d85768f476d9692",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularArithmetic.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularArithmetic.lean",
+      "upstream_git_blob": "f9038a3cfb8bfa6c097314dcc3054016f3776f57",
+      "local_sha256": "0d6ee80551b80e1b1a573f3c93230c1952affc6c9d15967641ebf3b0353f9eb2",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularDivisionPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularDivisionPrograms.lean",
+      "upstream_git_blob": "c6f41342a03dc9333f2d69b0232acdae69e5452a",
+      "local_sha256": "0c7253fa84546ad4283f8a186ab2883db97f52654e789952a7793ab4567eddf6",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularPrograms.lean",
+      "upstream_git_blob": "44ca7c01017e106affae6227a288d4797a339eb7",
+      "local_sha256": "d2ab123384001a4b2267ad765f81b37a8889fe87a2c2545e79bad812b6a95f92",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularQuotientArithmetic.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularQuotientArithmetic.lean",
+      "upstream_git_blob": "4bd2b6a042a8263c8c13bc88be40c9c575216582",
+      "local_sha256": "e0dccce0426e2551dc347fff81250b1f7188d356ac9311787a4f767553e14543",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularQuotientPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularQuotientPrograms.lean",
+      "upstream_git_blob": "3f3d638053c7e9e442076a3947033b482b84a407",
+      "local_sha256": "0c0eb66233e23572a6ca4abbad410dd9d1b695a7000b537892032dff5621f7de",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularRingCore.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularRingCore.lean",
+      "upstream_git_blob": "a19ff61d2a444cd4e9bb277488de394204376f02",
+      "local_sha256": "22af4e81b68381368d329d76870d8c1f81c6490625f2d46e39c97357424ba26c",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ModularRingPrograms.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ModularRingPrograms.lean",
+      "upstream_git_blob": "4a5baf6e76e0bafd90c384e0b528fdf3799a59ac",
+      "local_sha256": "d2819aee3fd8fa0c06c120eddff4ef1eb96c2c1b65a4ed8388167ea7374cba4e",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/NilpotentDefect.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/NilpotentDefect.lean",
+      "upstream_git_blob": "b4f4759b4ff329cc67beddf7b1b91f665925d978",
+      "local_sha256": "99123ca49c19ce411f027a6f3cf77134c049049e89211baac12c4d72a2bfe38d",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ParameterOrder.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ParameterOrder.lean",
+      "upstream_git_blob": "a4bf555acb301b7df7ae9000bf8fa84857ca2470",
+      "local_sha256": "befc80871c1c0abd14e51276b594b412dc0767f661c0ccc6e3797a2dd1c63daa",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ProgramFrames.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ProgramFrames.lean",
+      "upstream_git_blob": "ad09cc62dd978971b0298998f5d8b24900b45911",
+      "local_sha256": "728cd9b4fa27e4d4b7f47f3ea2d4540179ec2515f8b8c08799d2cb5a01c05275",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ProgramLinking.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ProgramLinking.lean",
+      "upstream_git_blob": "a22e92d136bca9fcabc158c45f18ed3b06da18fc",
+      "local_sha256": "2f97a16d395f2cefde6b9e880c99221fd420e2b3584b9b84c668ee7f433d5bb5",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ProgramLogic.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ProgramLogic.lean",
+      "upstream_git_blob": "b4e64b8daa19eba5714a23245ccf170baf32c321",
+      "local_sha256": "e897ecc5cafb6ca3a6ca5b4b9219a42168946ca175344c0480a8027d194429ac",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/ProgramStateFrames.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/ProgramStateFrames.lean",
+      "upstream_git_blob": "aa76e453001977a07651c10d17880f1765e96323",
+      "local_sha256": "c8219202f10080b91e6278e9832837e7b39210a11d5614f3c5ff8afa874c5534",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/SAT.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/SAT.lean",
+      "upstream_git_blob": "14dcfd0c910a08b005354da1fa66fbdac3ae7192",
+      "local_sha256": "1c18c745c25eb7a333f6c3ed1566b4e208238a44a3ebfce428ee05d8f8b00e22",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/CompileSpace.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/CompileSpace.lean",
+      "upstream_git_blob": "864fef9af7712c050f354012730feb65be44d792",
+      "local_sha256": "3626d4b143cc49e28fc32a8a92bda187ecf5fbfc6f0cb5f24ebe78fb572482e4",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/GuardedCompiler.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/GuardedCompiler.lean",
+      "upstream_git_blob": "8f0a8f28cb7c8bcfb903e9da8bcad990016722c7",
+      "local_sha256": "b710353c7004621142b47f22c45a215f2f531c74a3d3ad6c551e79c65d6b5ad4",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/StructuredSpace.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/StructuredSpace.lean",
+      "upstream_git_blob": "739c7134de323b68e292b7fd210bbf38bd216461",
+      "local_sha256": "3665db04d210ada67180c9198b7f77b56330ee9b9531bd63a1db36b4d213d55a",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/VisitedTape.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/VisitedTape.lean",
+      "upstream_git_blob": "773e4fcae6fbf93de0660e8d202d8b4d25fe4275",
+      "local_sha256": "43a20226fee5c1cc22eedc43b9602009a143894b1429cd53e2136071dad0f11b",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StackAdapter.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StackAdapter.lean",
+      "upstream_git_blob": "a7166cff66c6531db80cc5ea83352aa7bc6f20b7",
+      "local_sha256": "d5f79faa42770843551058dd16bd59e59ae1925476adffc9be54a1f6b9365c7c",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StackCompiler.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StackCompiler.lean",
+      "upstream_git_blob": "02c74fd18510ea69992c9cf760b40f17cb823ea5",
+      "local_sha256": "16b4549c3481ce9c1fb69ae52c13ab06ad294fc65d857da2c0dddea14385abf9",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StackEncoding.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StackEncoding.lean",
+      "upstream_git_blob": "d6a1589139993317766fc8c3bae1a993a52c920f",
+      "local_sha256": "a95147a412eddbdc50023bbed94aeac05df0a14757912a573454b5cf4cf4b8dd",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StackMachine.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StackMachine.lean",
+      "upstream_git_blob": "1d2239b388311392f12a7b883cd2bf3757bf916f",
+      "local_sha256": "4d0baf3e85ba823f6609b0bae88d18ce4a3dc98f5033ce65822913bbcc3c02df",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StackRoutines.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StackRoutines.lean",
+      "upstream_git_blob": "c6a3afd31d575c518aa8af770826f22df703135d",
+      "local_sha256": "576b66c19cd0f22a6fcb307d936484fa053ee03be54b8fd307879746d89f1686",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StructuredCalls.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StructuredCalls.lean",
+      "upstream_git_blob": "d0e2a152c49ad0f25230591393c322001820b1a3",
+      "local_sha256": "55a99e17c04eb302fc35c7722824e2d2e08a126e4f7a86d756e85a33ac436526",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/StructuredProgram.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/StructuredProgram.lean",
+      "upstream_git_blob": "523b2db5ddcccb122c4314ac8df28e348c95d1d2",
+      "local_sha256": "a530017caadab656a78806185083443566d391d3c2f0d268166bdd54b6075e7f",
+      "modified": false
+    },
+    {
+      "path": "OAI/Algorithms/SubexponentialSAT/WeightedSupport.lean",
+      "upstream_path": "lean/OAI/Algorithms/SubexponentialSAT/WeightedSupport.lean",
+      "upstream_git_blob": "3d724a4762bc07d4644ca50f484d8b5f0c0c7291",
+      "local_sha256": "53e8218639f1fd9c0bb59f438ede3260869f17cc7cc04848ce5ead04aede9aea",
+      "modified": true
+    }
+  ],
+  "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "source_file_count": 44,
+  "source_lines": 16494,
+  "entry_modules": [
+    "OAI.Algorithms.SubexponentialSAT.SqrtLogSpace.CompileSpace",
+    "OAI.Algorithms.SubexponentialSAT.ModularRingPrograms",
+    "OAI.Algorithms.SubexponentialSAT.ModularQuotientPrograms",
+    "OAI.Algorithms.SubexponentialSAT.ArrayUpdatePrograms",
+    "OAI.Algorithms.SubexponentialSAT.CounterForPrograms",
+    "OAI.Algorithms.SubexponentialSAT.BitProgramSelectedSpace",
+    "OAI.Algorithms.SubexponentialSAT.CounterWidth",
+    "OAI.Algorithms.SubexponentialSAT.ListRegisterProgram",
+    "OAI.Algorithms.SubexponentialSAT.ProgramStateFrames",
+    "OAI.Algorithms.SubexponentialSAT.SqrtLogSpace.StructuredSpace"
+  ],
+  "compatibility_patch_sha256": "6f0fc46ace462dd6ba1c3639cf0d8d350f1445bed175a09ad9b09dcc39c72a18"
+}

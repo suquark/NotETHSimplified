@@ -1,0 +1,10 @@
+.lake/
+*.aux
+*.log
+*.out
+*.toc
+.DS_Store
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+__pycache__/
