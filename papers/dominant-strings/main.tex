@@ -1,0 +1,396 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,microtype,booktabs,array,xcolor,graphicx,tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage[margin=1.1in]{geometry}
+\usepackage[font=small,labelfont=bf,skip=8pt]{caption}
+\usepackage{url}
+\makeatletter\g@addto@macro{\UrlBreaks}{\do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j\do\k\do\l\do\m\do\n\do\o\do\p\do\q\do\r\do\s\do\t\do\u\do\v\do\w\do\x\do\y\do\z\do\0\do\1\do\2\do\3\do\4\do\5\do\6\do\7\do\8\do\9\do\-}\makeatother
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=green!35!black,urlcolor=blue!50!black]{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newcommand{\lean}[1]{\texttt{#1}}
+\newcommand{\Hs}{\mathcal H}
+\newcommand{\Vs}{\mathcal V}
+\setlength{\emergencystretch}{3em}
+\hypersetup{pdftitle={Dominant Strings for 3-SAT: Counting Solutions with Few Occurrences per Variable},pdfauthor={Siyuan Zhuang}}
+
+\title{Dominant Strings for 3-SAT:\\Counting Solutions with Few Occurrences per Variable}
+\author{Siyuan Zhuang}
+\date{November 9, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Let $\Delta\ge1$ and $\varepsilon>0$. We count the solutions of a formula with clauses of at most three literals on $n$ variables, in which every variable occurs at most $\Delta$ times, in time $C n^{c}2^{\varepsilon n}$, where $C$ and $c$ depend only on $\Delta$ and $\varepsilon$. Together with the sparsification lemma of Impagliazzo, Paturi and Zane, this refutes the Exponential Time Hypothesis, a statement first announced by OpenAI and Claude (Anthropic).
+
+The proof is a recursion on a fixed tower of grids. A formula becomes a network of nodes joined by wires, and each wire is marked by the difference of the bits at its two ends. With this mark, two wires that cross both the rows and the columns of a grid satisfy $X=V-H$: the crossing pair equals a vertical pair minus a horizontal pair. For $t$ such pairs on one rectangle, the product splits into $2^t$ strings over $\{V,H\}$. We sum the strings with more letters $H$ across the rows and the strings with more letters $V$ across the columns. Equal product terms then coincide, and each half is carried by at most $1.8t$ new wires in place of $2t$. A quadratic potential falls by the factor $\sqrt{0.91}$ at every level in one of the two directions, whatever the distribution of the wires. The proof uses one identity on four bits, a count of strings and the Cauchy--Schwarz inequality. The theorem is formalized in Lean~4 down to a multitape machine, with its time and space.
+\end{abstract}
+
+\section*{The result and the strategy}
+
+An \emph{occurrence} of a variable $i$ is a pair of a clause $C$ and a literal $x_i$ or $\neg x_i$ in $C$.
+
+\begin{theorem}\label{thm:main}
+Let $\Delta\ge1$ and $\varepsilon>0$. Given a formula $\Psi$ on the variables $x_1,\dots,x_n$ with clauses of at most three literals, in which every variable has at most $\Delta$ occurrences, the number of assignments of the $n$ variables that satisfy $\Psi$ is computed in time $Cn^c2^{\varepsilon n}$, where $C$ and $c$ depend only on $\Delta$ and $\varepsilon$.
+\end{theorem}
+
+The Exponential Time Hypothesis of Impagliazzo and Paturi~\cite{IP01} says that for some $\delta>0$, no algorithm decides 3-SAT on $n$ variables in time $2^{\delta n}$ times a polynomial in the input size. The sparsification lemma of Impagliazzo, Paturi and Zane~\cite{IPZ01} reduces every 3-CNF to formulas with few occurrences, so Theorem~\ref{thm:main} contradicts the hypothesis:
+
+\begin{corollary}\label{cor:eth}
+For each $\varepsilon>0$, 3-SAT with $n$ variables is decided deterministically in time $C_\varepsilon|\varphi|^{O_\varepsilon(1)}2^{\varepsilon n}$, where $|\varphi|$ is the size of the input $\varphi$.
+\end{corollary}
+
+\subsection*{Background and what is simplified}
+
+OpenAI~\cite{OAI26} and, independently, Claude (Anthropic)~\cite{Cla26} announced algorithms for counting with explicit subexponential rates. O'Donnell~\cite{OD26} and Kintali~\cite{Kin26} gave expositions of OpenAI's approach, and a community examination of the argument has been called for~\cite{ETHblog}. Like the proof of Theorem~2 in~\cite{Cla26} and like Kintali, we fix $\varepsilon$ and leave the rate unoptimized. We aim for a proof that is short to state and easy to follow.
+
+The proof was written to be presented in an explanatory video and to a general audience, so its steps are elementary and can be drawn. For the same reason it uses plain names for standard objects. In the language of tensor networks, a network is a tensor network: a node function is a tensor, the $w$ wires between two nodes form one bond of dimension $2^w$, the value $Z$ is the full contraction, and merging the nodes of a row contracts them. The mark of a wire is the $2\times2$ Levi-Civita matrix, $\epsilon_{e^-e^+}=e^+-e^-$, and an equality test is the identity matrix; Lemma~\ref{lem:flip} changes one into the other. The identity $X=V-H$ is the Schouten identity $\epsilon_{xv}\epsilon_{yu}=\epsilon_{xu}\epsilon_{yv}-\epsilon_{xy}\epsilon_{uv}$, and the strings and letters of Section~\ref{sec:dom} index the terms of a multiplied-out product.
+
+The closest earlier route is Claude's. The grid of rows and columns, the rectangles, the expansion with one piece per rectangle, and the choice to merge rows or columns for each term are the core of Claude's recursion (Sections~2.5, 4 and~5 of~\cite{Cla26}). The identity $X=V-H$ for one pair of wires is the one-bit crossing identity of~\cite[Appendix~H]{Cla26}, written with difference marks; it is also the classical relation among $2\times2$ determinants. Two parts differ from Claude's proof. First, the pieces of a rectangle: the proof of Theorem~2 in~\cite{Cla26} applies an eight-square identity to blocks of three bits, with a number of pieces per rectangle that grows with the bits, and it regroups the merged nodes by a second-moment argument (Section~2.6 and Lemma~1 there). Here each rectangle has exactly two pieces, the sums over the $H$-dominant and the $V$-dominant strings, and the count of their distinct product terms (Lemma~\ref{lem:dom}) gives at most $1.8t$ wires for $t$ pairs. Second, what is tracked: a quadratic potential falls at every level for arbitrary weights (Lemma~\ref{lem:phi}), so no node is regrouped, and the number of nodes at each level is the square root of the last one. In return, Claude's route gives an explicit rate: with pieces built from integer partitions the potential falls by $1/\sqrt2$ per level (Appendices~A and~B of~\cite{Cla26}), where ours falls by $\sqrt{0.91}\approx0.954$.
+
+Both differences are shared with the companion paper \emph{Uncrossing Wires for 3-SAT}~\cite{Zhu26}, which introduced the quadratic potential tracked across the levels and the two pieces grouped by the number of horizontal terms. The present paper reads independently of it and changes three things. First, the mark of a wire. In~\cite{Zhu26} a wire tests whether its two end bits are equal, and the crossing identity reads $[x=v][y=u]=U-S$, where $U=[x=u][y=v]$ is again a pair of equality tests and $S=(y-x)(v-u)$ is a product of differences. Here every wire carries the difference of its end bits, so all three terms of $X=V-H$ are products of two differences, and every level after the first is a network of this one kind (Lemma~\ref{lem:flip} converts the equality tests of the formula). The four letters $P,Q,R,H$ of Section~\ref{sec:dom} take the place of the four functions of two bits in~\cite{Zhu26}. Second, the number of pairs used on a rectangle. In~\cite{Zhu26} it is the largest odd number at most the smaller diagonal weight $w_2$, because with an even number $m$ the index there saves nothing at $m=2$. Here a tie between $H$ and $V$ is broken by the last letter, so the index has $t-1+\lceil8\lfloor t/2\rfloor/5\rceil$ bits, all $t=w_2$ pairs are used, and the cheaper piece costs at most $w_1+0.8w_2$ wires instead of $w_1+0.9w_2$. The potential then falls by $\sqrt{0.91}$ per level instead of $\sqrt{24/25}$. Third, the statement. The theorem of~\cite{Zhu26} is the 3-SAT theorem, with the branching of Impagliazzo, Paturi and Zane inside its proof. Theorem~\ref{thm:main} counts the solutions of formulas with few occurrences and has no branching, and its Lean form \lean{Machine.machine\_bounded} does not use the branching tree (Section~\ref{sec:formal}). Quadratic quantities also occur in the other cited works as balance tools inside one level or one schedule: the variance in Claude's Lemma~1, and the potentials of Kintali's schedules.
+
+\subsection*{The strategy}
+
+A sum over assignments would split if the clauses respected some partition of the variables into two groups: then it is a product of two sums. Every wire that crosses the partition multiplies the number of products by two. A formula with few occurrences can be an expander, where every balanced partition is crossed by a constant fraction of the occurrences. So we do not look for one partition.
+
+We write the number of solutions as the value of a network: nodes joined by wires, where each wire is marked by the difference of the bits at its two ends (Section~\ref{sec:net}). Then we arrange the nodes in a grid and use two partitions at once, into rows and into columns. Two wires on the diagonals of a rectangle cross both. The identity $X=V-H$ replaces them by a pair that crosses only the rows and a pair that crosses only the columns (Section~\ref{sec:cross}). A rectangle with $t$ pairs gives $2^t$ strings over $\{V,H\}$; we group them into two pieces, sum each piece across the cheaper cut, and merge equal product terms, so that each piece costs at most $1.8t$ wires across its cut instead of $2t$ (Section~\ref{sec:dom}). Choosing one piece per rectangle gives a sum of terms whose number depends only on the grid. Each term is a network on the rows or on the columns, after merging the nodes of a row or of a column (Section~\ref{sec:step}). A term may mix the pieces of different rectangles, so the number of wires need not fall, but a quadratic potential falls by $\sqrt{0.91}$ in one of the two networks (Section~\ref{sec:pot}). We keep that network and repeat on a tower of grids, until two nodes remain (Section~\ref{sec:chain}). The potential is $O(\Delta n)$ when the variables and clauses are spread evenly over the nodes, and so the exponent becomes $\varepsilon n$ (Section~\ref{sec:place}).
+
+Throughout, a statement in square brackets stands for $1$ if it holds and $0$ otherwise, and $[K]=\{0,\dots,K-1\}$. \emph{Cauchy} means $(\sum_{i\in I}c_id_i)^2\le\sum_{i\in I}c_i^2\sum_{i\in I}d_i^2$; with all $d_i=1$ it reads $(\sum_{i\in I}c_i)^2\le|I|\sum_{i\in I}c_i^2$.
+
+\section{Networks}\label{sec:net}
+
+\emph{Definition.} A \emph{network} has \emph{nodes} and \emph{wires}. Each wire $e$ joins two different nodes, its \emph{tail} and its \emph{head}, and it has two \emph{ends}, one at each of these nodes. A \emph{configuration} gives a bit to every end. We write $e^-$ for the bit at the tail end of $e$ and $e^+$ for the bit at its head end. The \emph{mark} of $e$ is the number $e^+-e^-\in\{-1,0,1\}$. Every node $s$ has a \emph{node function} $F_s$: it reads the bits of the ends at $s$ and returns a dyadic rational, that is, a fraction with a power of $2$ as denominator. The \emph{value} of the network $N$ is
+\[
+Z(N)=\sum_{\text{configurations}}\ \prod_{\text{wires }e}(e^+-e^-)\ \prod_{\text{nodes }s}F_s .
+\]
+The mark of $e$ is $0$ unless $e^+=1-e^-$, and then it is $(-1)^{e^-}$. So only the configurations in which every head end holds the complement of its tail end contribute, and there are $2^{|E|}$ of them, where $|E|$ is the number of wires. Enumerating them costs $2^{|E|}$ evaluations of the node functions. Our aim is to write $Z$ as a short sum of values of networks with few wires. The \emph{weight} $w(s,t)=w(t,s)$ is the number of wires between the nodes $s$ and $t$, in either orientation; $w(s,s)=0$.
+
+Reversing a wire, that is, exchanging its tail and its head, negates its mark. So reversing a wire and multiplying the function of one of its two nodes by $-1$ keeps the value. We use this to orient wires as we like.
+
+\emph{Equality tests.} The same nodes, wires and node functions also define a value in which each wire carries one bit: the value with \emph{equality tests} is
+\[
+Z_=(N)=\sum_{\text{configurations}}\ \prod_{\text{wires }e}[e^+=e^-]\ \prod_{\text{nodes }s}F_s .
+\]
+A formula is easy to write in this form. The difference marks come from it by the following conversion: complement every head end, and give every tail end the sign $(-1)^{e^-}$.
+
+\begin{lemma}\label{lem:flip}
+Let $N$ be a network, and let $N'$ have the same nodes and wires and the node functions
+\[
+F'_s=\prod_{\text{tail ends at }s}(-1)^{e^-}\cdot F_s(\text{the ends at $s$, each head end $e^+$ replaced by $1-e^+$}).
+\]
+Then $Z(N')=Z_=(N)$.
+\end{lemma}
+
+\begin{proof}
+In $Z(N')$ only the configurations with $e^+=1-e^-$ for every wire contribute, and the mark of $e$ is then $(-1)^{e^-}$. The node function at the head of $e$ reads $1-e^+=e^-$, and the node function at its tail has the sign $(-1)^{e^-}$, which cancels the mark. So each contributing configuration of $N'$ gives the term of $Z_=(N)$ in which both ends of every wire hold the bit of its tail end, and each term of $Z_=(N)$ arises once.
+\end{proof}
+
+\emph{The network of a formula.} Let $\Psi$ be a formula on $x_1,\dots,x_n$ whose clauses are sets of literals. Its network has a node for each variable $i$, a node for each clause $C$, and one more node for each variable, its \emph{own} node. It has a wire for each occurrence, from the variable to the clause, and a wire from each variable to its own node. With equality tests each wire holds one bit. The node function of a variable is $1$ if all bits of its wires are equal and $0$ otherwise; the node function of a clause is $1$ if some literal of $C$ is true when the literal $x_i$ reads the bit $b$ of its wire and $\neg x_i$ reads $1-b$, and $0$ otherwise; the node function of an own node is $1$.
+
+\begin{lemma}\label{lem:formula}
+$Z_=$ of the network of $\Psi$ is the number of assignments of $x_1,\dots,x_n$ that satisfy $\Psi$.
+\end{lemma}
+
+\begin{proof}
+A configuration with a nonzero term gives all wires of the variable $i$ one common bit $x_i$; every variable has at least its own wire, so the configurations with nonzero terms correspond to the assignments $x\in\{0,1\}^n$. The term of $x$ is the product of the clause functions, which is $1$ if every clause has a true literal and $0$ otherwise.
+\end{proof}
+
+\emph{Example.} For the single clause $x_1\vee\neg x_2$, Lemma~\ref{lem:flip} gives the difference form. All wires of a variable have their tails at the variable, so its function becomes $(-1)^{s_1+\dots+s_{k+1}}[s_1=\dots=s_{k+1}]$ on its $k+1$ wires, that is $[\text{all }0]+(-1)^{k+1}[\text{all }1]$. The clause has only head ends, and its function becomes $1-l_1(1-l_2)$, because the literal $x_1$ is false when the complemented bit $1-l_1$ is $0$. An own node keeps the function $1$. Summing over the contributing configurations gives $3$, the number of solutions.
+
+\emph{Merging.} Let the nodes be partitioned into \emph{blocks}. The \emph{merged network} has a node for each block $\beta$, the wires between different blocks with their orientations, and the node function
+\begin{equation}\label{merge}
+F_\beta=\sum\ \prod_{e\text{ inside }\beta}(e^+-e^-)\prod_{s\in\beta}F_s,
+\end{equation}
+where the sum runs over the bits of the ends of the wires inside $\beta$, and the ends of the other wires at nodes of $\beta$ are the inputs of $F_\beta$. Multiplying out $\prod_\beta F_\beta$ and reordering the sums shows that the merged network has the same value. One evaluation of $F_\beta$ is a sum of at most $2^{b}$ terms, where $b$ is the number of ends at nodes of $\beta$, and each term has one evaluation of $F_s$ for each $s\in\beta$. With equality tests the same holds, with one bit for each wire inside $\beta$ and the test $[e^+=e^-]$ in place of the mark.
+
+\section{Two cuts, and the crossing of two wires}\label{sec:cross}
+
+Let the nodes be split into two sets $L$ and $R$. If no wire joins $L$ to $R$, the value is a product: $Z(N)=Z(N_L)Z(N_R)$, where $N_L$ and $N_R$ keep the nodes and wires on each side. If $s$ wires join them, fix the bits of their ends: the contributing configurations of these wires are $2^s$, so $Z(N)$ is a sum of $2^s$ products of a number that depends only on $L$ and a number that depends only on $R$. We call these numbers the \emph{product terms} of the cut. So $s$ crossing wires cost a factor $2^s$, and conversely a sum of $2^s$ product terms across a cut can be carried by $s$ wires (Section~\ref{sec:step}).
+
+We use two cuts at once. Arrange the nodes in a grid of rows and columns. The \emph{row cut} separates two rows and the \emph{column cut} two columns. A wire inside a row crosses only the column cut, and a wire inside a column only the row cut. A wire between different rows and different columns crosses both.
+
+Take two rows and two columns. Their four nodes form a \emph{rectangle}: top left, top right, bottom left, bottom right. Let one wire run from the top left to the bottom right, and another from the top right to the bottom left, both with the tail in the top row. Write $x$ and $y$ for their tail ends, at the top left and the top right, and $v$ and $u$ for their head ends, at the bottom right and the bottom left. The product of their marks is the \emph{crossing} $X=(v-x)(u-y)$. Put
+\[
+V=(u-x)(v-y),\qquad H=(x-y)(u-v).
+\]
+These are the products of the marks of a \emph{vertical} pair, from $x$ down to $u$ and from $y$ down to $v$, and of a \emph{horizontal} pair, from $x$ to $y$ and from $u$ to $v$, whose marks multiply to $(y-x)(v-u)=H$. Expanding the three products gives
+\begin{equation}\label{cross}
+X=V-H,
+\end{equation}
+since both sides equal $uv-xu-yv+xy$. This is the relation among the $2\times2$ determinants of the columns $(1,x),(1,y),(1,u),(1,v)$: the mark $e^+-e^-$ is the determinant of the columns $(1,e^-)$ and $(1,e^+)$.
+
+\begin{center}
+\begin{tikzpicture}[x=1.15cm,y=1.15cm,every node/.style={font=\small},>={Stealth[length=5pt]}]
+\foreach \X/\T in {0/{$X$},3/{$V$},6/{$H$}}{
+  \node at (\X+0.5,-0.55) {\T};
+  \node (x\X) at (\X,1) {$x$};
+  \node (y\X) at (\X+1,1) {$y$};
+  \node (u\X) at (\X,0) {$u$};
+  \node (v\X) at (\X+1,0) {$v$};
+}
+\draw[->] (x0)--(v0); \draw[->] (y0)--(u0);
+\draw[->] (x3)--(u3); \draw[->] (y3)--(v3);
+\draw[->] (x6)--(y6); \draw[->] (u6)--(v6);
+\node at (2,0.5) {$=$}; \node at (5,0.5) {$-$};
+\end{tikzpicture}
+\end{center}
+
+Multiply~\eqref{cross} by the rest of the network and sum. Then the value with the crossing pair is the value with a vertical pair minus the value with a horizontal pair. The vertical pair crosses only the row cut, so across the column cut it costs no product term; the horizontal pair crosses only the column cut. One crossing pair costs $2^2=4$ product terms across either cut. After~\eqref{cross}, the vertical network across the column cut and the horizontal network across the row cut cost one product term each, two in all.
+
+The mark matters here. With the mark $[e^+=e^-]$, which tests equality, no fixed numbers $a,b$ satisfy $Z_X=aZ_V+bZ_H$ for all networks, where $Z_X,Z_V,Z_H$ are the values with the crossing, vertical and horizontal pair. Indeed, let the rest of the network contribute $(1-x)\,y\,u\,(1-v)$, which is $1$ only at $x=0$, $y=1$, $u=1$, $v=0$. With equality marks, the crossing pair joins $x=0$ to $v=0$ and $y=1$ to $u=1$, so $Z_X=1$; the vertical pair joins $x=0$ to $u=1$, so $Z_V=0$; the horizontal pair joins $x=0$ to $y=1$, so $Z_H=0$.
+
+\section{Many pairs: the dominant strings}\label{sec:dom}
+
+A rectangle can carry many crossing pairs. Let $t\ge1$, and let the $j$-th pair have the ends $x_j,y_j,u_j,v_j$ as above, for $1\le j\le t$; write $X_j,V_j,H_j$ for the products of this pair. By~\eqref{cross}, $\prod_jX_j=\prod_j(V_j-H_j)$. A \emph{string} is a word $\sigma=\sigma_1\cdots\sigma_t$ over the letters $V$ and $H$; $\sigma_t$ is its \emph{last letter}. Multiplying out,
+\[
+\prod_{j=1}^tX_j=\sum_\sigma T_\sigma,\qquad T_\sigma=\prod_{j:\sigma_j=V}V_j\prod_{j:\sigma_j=H}(-H_j).
+\]
+
+\emph{What a string costs.} Across the row cut, $H_j=(x_j-y_j)(u_j-v_j)$ is one product term, of a function of the top ends and a function of the bottom ends. Also
+\begin{equation}\label{vrow}
+V_j=x_jy_j\cdot1+1\cdot u_jv_j-\tfrac12(x_j+y_j)(u_j+v_j)+\tfrac12(x_j-y_j)(u_j-v_j),
+\end{equation}
+since the right side is $x_jy_j+u_jv_j-x_jv_j-y_ju_j$. We name the four terms by the letters $P,Q,R,H$. So a string with $d$ letters $V$ is a sum of $4^d$ product terms across the row cut, and in the same way of $4^{t-d}$ across the column cut. Treating the $2^t$ strings one by one, with the cheaper cut for each, costs about $4^t$ product terms in all when $t$ is large, because most strings have about $t/2$ letters of each kind. This saves no fixed fraction of the $4^t$ terms of the crossing.
+
+\emph{Equal product terms.} The last term of~\eqref{vrow} is half of the product $H_j$ itself. So if a string has the letter $V$ at the position $j$ and the expansion~\eqref{vrow} takes the letter $H$ there, the product term is the same as for the string with $H$ at the position $j$. Equal product terms need to be computed once: we add their coefficients. This works within one cut, so we split the strings into two halves, one for each cut.
+
+A string is \emph{$H$-dominant} if it has fewer letters $V$ than $H$, or as many and the last letter $H$; otherwise it is \emph{$V$-dominant}. Let $\Hs$ and $\Vs$ be the two sets, and put
+\[
+D_H=\sum_{\sigma\in\Hs}T_\sigma,\qquad D_V=\sum_{\sigma\in\Vs}T_\sigma,\qquad\prod_{j=1}^tX_j=D_H+D_V .
+\]
+The \emph{complement} $\bar\sigma$ exchanges the letters $V$ and $H$ at every position. Exactly one of $\sigma,\bar\sigma$ is $H$-dominant: if the numbers of the two letters differ, the complement exchanges them; if they are equal, the last letters of $\sigma$ and $\bar\sigma$ differ. So $|\Hs|=|\Vs|=2^{t-1}$. An $H$-dominant string has at most $\lfloor t/2\rfloor$ letters $V$. Changing a letter $V$ into $H$ keeps a string $H$-dominant: if it had fewer $V$ than $H$, it still has; if it had as many and the last letter $H$, it now has fewer $V$.
+
+For $t=3$, $\Hs=\{HHH,VHH,HVH,HHV\}$. The strings $VHH$, $HVH$, $HHV$ each give $4$ product terms across the row cut, and each of them includes the term of $HHH$. So $D_H$ has $1+3\cdot3=10$ distinct product terms instead of $13$, and $D_V$ has $10$ across the column cut; together $20$ instead of the $4^3=64$ of the crossing.
+
+\begin{lemma}\label{lem:dom}
+Let $t\ge1$ and $d(t)=t-1+\lceil8\lfloor t/2\rfloor/5\rceil$. Then $5d(t)\le9t-1$, so $d(t)<1.8t$.
+\begin{enumerate}\setlength{\itemsep}{0pt}
+\item $D_H=\sum_\xi c_\xi\,g_\xi(x,y)\,h_\xi(u,v)$, with an index $\xi$ of $d(t)$ bits, where $g_\xi$ reads only the top ends $x,y$ and $h_\xi$ only the bottom ends $u,v$.
+\item $D_V=\sum_\xi c'_\xi\,g'_\xi(x,u)\,h'_\xi(y,v)$, with an index $\xi$ of $d(t)$ bits, where $g'_\xi$ reads only the left ends and $h'_\xi$ only the right ends.
+\item $D_H$ is also a sum over an index of $2t$ bits of products across the column cut, and $D_V$ across the row cut.
+\end{enumerate}
+The coefficients are dyadic with $O(t)$ bits, and the coefficients and the functions are computed in time polynomial in $t$.
+\end{lemma}
+
+\begin{proof}
+\emph{The bound.} With $k=\lfloor t/2\rfloor$, $\lceil8k/5\rceil\le(8k+4)/5\le(4t+4)/5$, so $5d(t)\le5t-5+4t+4$.
+
+\emph{Words.} By~\eqref{vrow}, each $V_j$ is a sum of four products across the row cut, with the letters $P,Q,R,H$, the top parts $x_jy_j$, $1$, $x_j+y_j$, $x_j-y_j$, the bottom parts $1$, $u_jv_j$, $u_j+v_j$, $u_j-v_j$, and the coefficients $1$, $1$, $-\frac12$, $\frac12$. Each $-H_j$ is the letter $H$ with the coefficient $-1$. A \emph{word} is $\omega\in\{P,Q,R,H\}^t$; its top part $g_\omega(x,y)$ and bottom part $h_\omega(u,v)$ are the products of the parts of its letters. Multiplying out, $T_\sigma$ is the sum of the products $g_\omega h_\omega$ over the words $\omega$ that \emph{fit} $\sigma$, that is, with $\omega_j=H$ wherever $\sigma_j=H$, each with the product of the coefficients of its letters. So $D_H=\sum_\omega c_\omega g_\omega h_\omega$, where
+\[
+c_\omega=\sum_{\substack{\sigma\in\Hs\\\omega\text{ fits }\sigma}}\ \prod_{j:\omega_j\ne H}\kappa(\omega_j)\prod_{j:\omega_j=H}\begin{cases}\frac12&\sigma_j=V\\-1&\sigma_j=H\end{cases},\qquad\kappa(P)=\kappa(Q)=1,\ \kappa(R)=-\tfrac12 .
+\]
+
+\emph{Which words occur.} A string that $\omega$ fits has the letter $V$ at each position where $\omega_j\ne H$. Let $\sigma(\omega)$ be the string with $V$ exactly at these positions. Every string that $\omega$ fits arises from $\sigma(\omega)$ by changing some letters $H$ into $V$, so it is $H$-dominant only if $\sigma(\omega)$ is, because changing $V$ into $H$ keeps $H$-dominance. So $c_\omega=0$ unless $\sigma(\omega)\in\Hs$. The words with $\sigma(\omega)\in\Hs$ correspond to the pairs of a string $\sigma\in\Hs$ and a letter from $\{P,Q,R\}$ at each of its positions with $V$. There are at most $|\Hs|\,3^{\lfloor t/2\rfloor}=2^{t-1}3^{\lfloor t/2\rfloor}$ such words.
+
+\emph{The index.} The index $\xi$ has two parts. The first part has $t-1$ bits. Of $\sigma(\omega)$ and its complement, exactly one has the last letter $H$; call it $\tau$, and let the first part be the letters $\tau_1,\dots,\tau_{t-1}$, with $H$ written as $1$ and $V$ as $0$. To decode, put the letter $H$ at the end; the result is $\tau$, and $\sigma(\omega)$ is $\tau$ if $\tau\in\Hs$ and $\bar\tau$ otherwise, because exactly one of them is $H$-dominant. So the first part names the strings of $\Hs$ bijectively. The second part is a number $q$ of $\lceil8\lfloor t/2\rfloor/5\rceil$ bits: the letters of $\omega$ at the positions with $V$, read from the first position on, are the base-$3$ digits of $q$ from the lowest on, with $P,Q,R$ as $0,1,2$. Since $\sigma(\omega)$ has $j\le\lfloor t/2\rfloor$ letters $V$, $q<3^j\le3^{\lfloor t/2\rfloor}\le2^{8\lfloor t/2\rfloor/5}$, because $3^5=243<256=2^8$. An index whose second part is at least $3^j$ names no word, and its term is $0$. This proves part~1, with $g_\xi=g_\omega$, $h_\xi=h_\omega$ and $c_\xi=c_\omega$.
+
+\emph{The coefficients.} In the sum for $c_\omega$, a string that $\omega$ fits is $\sigma(\omega)$ with a set $A$ of the positions of the letters $H$ of $\omega$ changed to $V$. Whether it is $H$-dominant depends only on $|A|$ and on whether $A$ contains the last position. So $c_\omega$ is $\prod_j\kappa(\omega_j)$ times a sum of at most $2(t+1)$ terms, each a binomial coefficient times $(\frac12)^{|A|}(-1)^{h-|A|}$, where $h$ is the number of letters $H$ of $\omega$.
+
+\emph{Part~2.} Across the column cut, $V_j=(u_j-x_j)(v_j-y_j)$ is one product, of a function of the left ends $x_j,u_j$ and a function of the right ends $y_j,v_j$, and
+\[
+-H_j=-x_ju_j\cdot1-1\cdot y_jv_j+\tfrac12(x_j+u_j)(y_j+v_j)-\tfrac12(u_j-x_j)(v_j-y_j),
+\]
+since $H_j=x_ju_j+y_jv_j-x_jv_j-y_ju_j$. The last term is $-\frac12V_j$. So the argument above applies with the letters $V$ and $H$ exchanged: changing $H$ into $V$ keeps $V$-dominance, a $V$-dominant string has at most $\lfloor t/2\rfloor$ letters $H$, and the first part of the index names $\tau$, the one of the string and its complement with the last letter $V$, with $V$ written as $1$.
+
+\emph{Part~3.} Across the column cut, $V_j$ is one product and $-H_j$ is four, so every $T_\sigma$, and hence $D_H$, is a sum over the $4^t$ words with these four letters at each position, with the coefficient of a word summed over the strings of $\Hs$ that it fits. The index names a word with two bits per letter. The same holds for $D_V$ across the row cut.
+\end{proof}
+
+For $t=3$ the index has $d(3)=2+2=4$ bits. The word $HQH$ comes from the string $HVH$, which has the last letter $H$, so the first part is $\tau_1,\tau_2=H,V$, written $1,0$; the letter $Q$ is the digit $1$, so the second part is $0,1$. For $t=1$, $\Hs=\{H\}$ and $D_H=-H_1$ is one product: $d(1)=0$.
+
+\section{One level}\label{sec:step}
+
+Lemma~\ref{lem:dom} treats one rectangle. A network has wires on many pairs of nodes. We now split all rectangles at once and merge nodes, so that the value becomes a sum of values of networks with fewer nodes.
+
+\emph{Wires that carry an index.} Lemma~\ref{lem:dom} writes a piece as $\sum_\xi g_\xi h_\xi$ over an index of $m$ bits. Such a sum is the value of $m$ wires. Let $m$ wires run from a node $\alpha$ to a node $\beta$, with tail bits $b\in\{0,1\}^m$ and head bits $b'$. Put $G(b)=(-1)^{|b|}g_b$ at $\alpha$, where $|b|$ is the number of ones of $b$, and $G'(b')=h_{\mathbf1-b'}$ at $\beta$, where $\mathbf1-b'$ complements every bit. The contributing configurations have $b'=\mathbf1-b$ and marks with product $(-1)^{|b|}$, so
+\begin{equation}\label{index}
+\sum_{b,b'}\ \prod_{k=1}^m(b'_k-b_k)\,G(b)\,G'(b')=\sum_\xi g_\xi h_\xi .
+\end{equation}
+
+\emph{The grid.} Let $N$ be a network on $K=K'K'$ nodes, written as $(a,b)$ with $a,b\in[K']$: $a$ is the row and $b$ the column. By reversing wires, let every wire run from the node with the smaller number $aK'+b$ to the node with the larger number. A wire between different rows then has its tail in the upper row, and the horizontal pair of Section~\ref{sec:cross} runs from $x$ to $y$ and from $u$ to $v$. Two rows $a<a'$ and two columns $b<b'$ form a rectangle $\rho$. Its \emph{diagonals} are the pairs of nodes $\{(a,b),(a',b')\}$ and $\{(a,b'),(a',b)\}$; every pair of nodes in different rows and different columns is a diagonal of exactly one rectangle. Let $w_1$ and $w_2$ be the weights of the two diagonals and $t_\rho=\min(w_1,w_2)$. List the wires of each diagonal in a fixed order, and pair the $j$-th wire of one diagonal with the $j$-th wire of the other, for $j\le t_\rho$. These are the \emph{paired} wires; with the ends $x_j,y_j$ at $(a,b),(a,b')$ and $u_j,v_j$ at $(a',b),(a',b')$, the product of their marks is $\prod_jX_j=D_H^\rho+D_V^\rho$, by Section~\ref{sec:dom}. All other wires are \emph{carried}: those inside one row or one column, and the $w_1+w_2-2t_\rho$ unpaired wires of each rectangle.
+
+\emph{Choices.} A \emph{choice} $\pi$ picks, for each rectangle $\rho$ with $t_\rho\ge1$, one of the two pieces $P_\rho\in\{D_H^\rho,D_V^\rho\}$. There are $(K'(K'-1)/2)^2\le K'^4/4$ rectangles, so at most $2^{K'^4/4}$ choices. In $Z(N)$ the marks of the paired wires multiply to $\prod_\rho(D_H^\rho+D_V^\rho)$. Multiplying out gives $Z(N)=\sum_\pi Z_\pi$, where $Z_\pi$ is $Z(N)$ with the product of the marks of the paired wires replaced by $\prod_\rho P_\rho$.
+
+\emph{Merging the rows.} Fix $\pi$. For a rectangle $\rho$ with the rows $a<a'$, let $d^{\mathrm r}_\rho$ be $d(t_\rho)$ if $P_\rho=D_H^\rho$ and $2t_\rho$ if $P_\rho=D_V^\rho$. By Lemma~\ref{lem:dom}, $P_\rho=\sum_\xi g_\xi(x,y)h_\xi(u,v)$ over an index of $d^{\mathrm r}_\rho$ bits, with the coefficients included in $g_\xi$. The \emph{row network} $N^{\mathrm r}_\pi$ has the $K'$ rows as nodes, and these wires:
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item every carried wire between two different rows, with its orientation;
+\item for every rectangle $\rho$, $d^{\mathrm r}_\rho$ new wires from its upper row $a$ to its lower row $a'$, carrying the index of $P_\rho$ as in~\eqref{index}.
+\end{itemize}
+The node function at the row $a$ is~\eqref{merge} for the block of the nodes of the row $a$, with the paired wires treated as follows: their ends at the row $a$ are summed inside the block like the ends of the wires inside the row, their marks are dropped, and the block function has the factor $G$ of~\eqref{index} for each rectangle with the upper row $a$ and the factor $G'$ for each rectangle with the lower row $a$. Then the weights of $N^{\mathrm r}_\pi$ are
+\begin{equation}\label{wrow}
+w^{\mathrm r}(a,a')=\sum_bw((a,b),(a',b))+\sum_{b<b'}f^{\mathrm r}_\rho,\qquad f^{\mathrm r}_\rho=w_1+w_2-2t_\rho+d^{\mathrm r}_\rho,
+\end{equation}
+where $\rho$ is the rectangle with the rows $a,a'$ and the columns $b,b'$, and $w_1,w_2$ are the weights of its diagonals: $f^{\mathrm r}_\rho$ counts its unpaired wires and its new wires.
+
+\emph{Merging the columns.} Exchanging rows and columns gives the \emph{column network} $N^{\mathrm c}_\pi$ on the $K'$ columns: the pieces are written across the column cut, $d^{\mathrm c}_\rho$ is $d(t_\rho)$ if $P_\rho=D_V^\rho$ and $2t_\rho$ if $P_\rho=D_H^\rho$, and $f^{\mathrm c}_\rho=w_1+w_2-2t_\rho+d^{\mathrm c}_\rho$. The new wires of a rectangle run from its left column to its right column. A carried wire from the node $(a,b')$ to the node $(a',b)$, with $a<a'$ and $b<b'$, now runs from the column $b'$ to the column $b$; it is reversed, and the node function of the column $b$ has the factor $-1$ for it.
+
+\begin{lemma}\label{lem:step}
+For each choice $\pi$, $Z_\pi=Z(N^{\mathrm r}_\pi)=Z(N^{\mathrm c}_\pi)$. So for each $\pi$ we may pick the row network or the column network, and $Z(N)$ is the sum over $\pi$ of the values of the picked networks.
+\end{lemma}
+
+\begin{proof}
+Consider the rows. In $Z_\pi$, write each $P_\rho$ as the sum over its index and then as the sum~\eqref{index} over the bits of $d^{\mathrm r}_\rho$ new wires from the row $a$ to the row $a'$. The result is the value of a network on the $K$ old nodes: the carried wires, the new wires, and the ends of the paired wires, which are now read by the factors $G$ and $G'$ instead of by marks. The factor $G$ of $\rho$ reads only ends at the row $a$, at its nodes $(a,b)$ and $(a,b')$, and $G'$ only ends at the row $a'$. So merging each row into one node, as in~\eqref{merge}, keeps the value and gives $N^{\mathrm r}_\pi$. The columns are the same with the expansion across the column cut in Lemma~\ref{lem:dom}.
+\end{proof}
+
+In a rectangle, one of $d^{\mathrm r}_\rho,d^{\mathrm c}_\rho$ is $d(t_\rho)$ and the other is $2t_\rho$. Let $w_1\ge w_2$, so $t_\rho=w_2$. In the direction with $d(t_\rho)$, Lemma~\ref{lem:dom} gives
+\begin{equation}\label{fcheap}
+5f_\rho=5(w_1-w_2)+5d(w_2)\le5w_1+4w_2-1\quad(w_2\ge1),
+\end{equation}
+and $f_\rho=w_1$ if $w_2=0$. In the other direction $f_\rho=w_1+w_2$.
+
+\emph{Example.} Let four nodes form one rectangle, with three wires between every two of them. A row network keeps the $3+3$ vertical wires and replaces the $3+3$ diagonal wires by $d(3)=4$ new wires if $P_\rho=D_H$: $10$ wires between its two nodes instead of the $12$ that cross the row cut. The three wires inside each row are summed inside the new nodes.
+
+\section{The potential}\label{sec:pot}
+
+A rectangle with $D_H$ has fewer new wires in the row network, and a rectangle with $D_V$ in the column network. A choice may mix them, and a rectangle with wires on only one diagonal keeps all of them in both networks. So the number of wires need not fall. What does change is the number of nodes. In the network with two rows, two columns and $d$ wires between the top left and the bottom right only, the row network has $d$ wires between its two nodes. Before, these wires occupied one pair of nodes out of six; now they occupy the only pair. So we measure a network $N$ with $M$ nodes and the weights $w$ by the \emph{potential}
+\[
+\Phi(N)=M\Bigl(\sum_{s,t}w(s,t)^2\Bigr)^{1/2},
+\]
+where $s,t$ run over the ordered pairs of nodes. In the example, $\Phi$ falls from $4\sqrt{2d^2}$ to $2\sqrt{2d^2}$, while the number of wires stays $d$. We use two consequences of Cauchy. Over the $M^2$ ordered pairs,
+\begin{equation}\label{ends}
+2|E|=\sum_{s,t}w(s,t)\le\Phi(N),
+\end{equation}
+so a small potential means few wires. For a set $R$ of $r$ nodes, the number of ends at $R$ is $\sum_{s\in R}\sum_tw(s,t)$, a sum over $rM$ ordered pairs, so
+\begin{equation}\label{rowends}
+\sum_{s\in R}\sum_tw(s,t)\le\sqrt{rM}\Bigl(\sum_{s,t}w(s,t)^2\Bigr)^{1/2}=\sqrt{r/M}\;\Phi(N).
+\end{equation}
+
+\begin{lemma}\label{lem:phi}
+Let $\gamma=\sqrt{0.91}$. For every choice $\pi$, $\min\bigl(\Phi(N^{\mathrm r}_\pi),\Phi(N^{\mathrm c}_\pi)\bigr)\le\gamma\,\Phi(N)$.
+\end{lemma}
+
+\begin{proof}
+Fix rows $a\ne a'$, and write each $f^{\mathrm r}_\rho$ in~\eqref{wrow} as $\frac12f^{\mathrm r}_\rho+\frac12f^{\mathrm r}_\rho$. Then~\eqref{wrow} has $K'+K'(K'-1)=K'^2$ terms, and Cauchy gives
+\[
+w^{\mathrm r}(a,a')^2\le K'^2\Bigl(\sum_bw((a,b),(a',b))^2+\sum_{b<b'}\tfrac12(f^{\mathrm r}_\rho)^2\Bigr).
+\]
+Sum over the ordered pairs $a\ne a'$ and multiply by $K'^2$; since $N^{\mathrm r}_\pi$ has $K'$ nodes, the left side becomes $\Phi(N^{\mathrm r}_\pi)^2$. A rectangle arises from $(a,a')$ and from $(a',a)$, so the $\frac12$ disappears, and the first sum becomes the sum over the ordered pairs of different nodes in one column. The same holds for the columns. So
+\[
+\Phi(N^{\mathrm r}_\pi)^2+\Phi(N^{\mathrm c}_\pi)^2\le K'^4\Bigl(\sum_\rho\bigl((f^{\mathrm r}_\rho)^2+(f^{\mathrm c}_\rho)^2\bigr)+\sum_{\substack{s\ne t\text{ in one row}\\\text{or one column}}}w(s,t)^2\Bigr).
+\]
+Fix $\rho$, with $w_1\ge w_2$. By~\eqref{fcheap}, one of $f^{\mathrm r}_\rho,f^{\mathrm c}_\rho$ is at most $w_1+0.8w_2$, and the other is at most $w_1+w_2$. Now $(w_1+w_2)^2\le2(w_1^2+w_2^2)$, and $(w_1+0.8w_2)^2\le1.64(w_1^2+w_2^2)$, because the difference is $(0.8w_1-w_2)^2\ge0$. So
+\[
+(f^{\mathrm r}_\rho)^2+(f^{\mathrm c}_\rho)^2\le3.64\,(w_1^2+w_2^2).
+\]
+The four ordered pairs on the diagonals of $\rho$ have $\sum w(s,t)^2=2(w_1^2+w_2^2)$, so the term of $\rho$ is at most $1.82$ times their sum. A pair in one row or one column enters with the factor $1\le1.82$. Every ordered pair of different nodes lies in one row, in one column, or on a diagonal of exactly one rectangle. So the right side is at most $1.82\,K'^4\sum_{s,t}w(s,t)^2=1.82\,\Phi(N)^2$, because $N$ has $K'^2$ nodes. The smaller of the two potentials has a square at most half of this.
+\end{proof}
+
+Without the saving of Lemma~\ref{lem:dom}, both $f$ would be $w_1+w_2$, the constant $3.64$ would be $4$, and the potential would not fall. The same computation with all $f_\rho=w_1+w_2$ shows that merging rows or columns never raises the potential.
+
+\section{The chain of levels, and its cost}\label{sec:chain}
+
+We now iterate until two nodes remain. Let $\ell\ge1$ and $K_j=2^{2^{\ell-j}}$ for $0\le j\le\ell$, so that $K_0=2^{2^\ell}$, $K_\ell=2$ and $K_j=K_{j+1}K_{j+1}$.
+
+\begin{theorem}\label{thm:net}
+Let $N_0$ be a network on $K_0$ nodes with potential $\Phi_0$, whose node functions are evaluated in time $T_0$. Then $Z(N_0)$ is computed in time $2^{K_0^2/3+3.4\gamma^\ell\Phi_0}$ times $T_0+1$, times a constant depending on $\ell$, times a polynomial in $\Phi_0$ and the bit length of the values of the node functions.
+\end{theorem}
+
+\begin{proof}
+\emph{The chains.} Write the nodes of $N_0$ as a grid of side $K_1$. Given $N_j$ with $j<\ell$, a grid of side $K_{j+1}$, pick a choice $\pi_j$ for $N_j$, and let $N_{j+1}$ be the one of its two networks with the smaller potential, and the row network if they are equal; write its $K_{j+1}$ nodes as a grid of side $K_{j+2}$, and orient its wires as in Section~\ref{sec:step}. A \emph{chain} is a sequence $(\pi_0,\dots,\pi_{\ell-1})$. By Lemma~\ref{lem:step}, $Z(N_0)$ is the sum of $Z(N_\ell)$ over all chains. By Lemma~\ref{lem:phi}, $\Phi_j=\Phi(N_j)\le\gamma^j\Phi_0$.
+
+The network $N_j$ has at most $K_{j+1}^4/4=K_j^2/4$ rectangles, and $N_{j+1}$ has at most $K_{j+1}^2/4=K_j/4$, which is at most a quarter of $K_j^2/4$, since $K_j\ge4$ for $j<\ell$. So all $N_j$ with $j<\ell$ have at most $K_0^2/3$ rectangles together, and there are at most $2^{K_0^2/3}$ chains. For one chain, the weights of all levels are computed in polynomial time, and they fix which of the two networks is kept, since a comparison of potentials is a comparison of two sums of squares.
+
+\emph{One chain.} The last network $N_\ell$ has two nodes, and by~\eqref{ends} at most $\Phi_\ell/2\le\frac12\gamma^\ell\Phi_0$ wires; its value is a sum over at most $2^{\gamma^\ell\Phi_0/2}$ configurations, each with two evaluations of node functions of $N_\ell$. A node function of $N_{j+1}$ is~\eqref{merge} for one row or one column of $N_j$: $K_{j+1}$ nodes of the $K_j$. By~\eqref{rowends} it is a sum over at most $2^{b_j}$ configurations of ends, with $b_j=\Phi_j/\sqrt{K_{j+1}}$, and each term has $K_{j+1}$ evaluations of node functions of $N_j$ and the factors $G,G'$ of Lemma~\ref{lem:dom}, which take polynomial time. So if $T_j$ is the time of one evaluation at the level $j$, then $T_{j+1}\le2^{b_j}(K_{j+1}T_j+p)$ for a polynomial $p$, and
+\[
+T_\ell\le2^{\sum_{j<\ell}b_j}\prod_{j<\ell}K_{j+1}\,(T_0+\ell p).
+\]
+The product of the $K_{j+1}$ is a constant depending on $\ell$.
+
+\emph{The exponent.} Put $r=\ell-j\ge1$. Then $\sqrt{K_{j+1}}=2^{2^{r-2}}\ge2^{r/2}$, since $2^{r-2}\ge r/2$ for $r\ge1$. With $\Phi_j\le\gamma^{\ell}\Phi_0\gamma^{-r}$,
+\[
+\sum_{j<\ell}b_j\le\gamma^\ell\Phi_0\sum_{r\ge1}q^r=\gamma^\ell\Phi_0\frac q{1-q},\qquad q=\frac1{\gamma\sqrt2}=\frac1{\sqrt{1.82}}<0.7413,
+\]
+and $q/(1-q)<2.87$. Adding the $\frac12\gamma^\ell\Phi_0$ of the last level gives at most $3.4\gamma^\ell\Phi_0$. From one level to the level before it, the bound on $\Phi_j$ grows by the factor $1/\gamma$, but the share $1/\sqrt{K_{j+1}}$ of one row is the square of the next one, so it falls by the factor $1/\sqrt2$ or more; so the bounds on the $b_j$ fall by the factor $q$ towards the first level.
+
+\emph{Bits.} All numbers of wires are at most the number of wires of $N_0$, since $d(t)\le2t$, and so at most $\Phi_0$. If the values at the level $j$ have at most $B_j$ bits, a value at the level $j+1$ is a sum of at most $2^{b_j}$ products of $K_{j+1}$ values and of the coefficients of Lemma~\ref{lem:dom}, so $B_{j+1}\le b_j+K_{j+1}B_j+O(\Phi_0+K_0^2)$. Hence all values are dyadic with polynomially many bits, and the arithmetic adds a polynomial factor.
+\end{proof}
+
+For comparison, enumerating the ends of all wires costs $2^{|E|}$, and $|E|$ can be close to $\Phi_0/2$. The theorem replaces this exponent by $3.4\gamma^\ell\Phi_0$, at the cost of a factor $2^{K_0^2/3}$ that does not depend on the wires.
+
+\section{Placing a formula, and the end of the proof}\label{sec:place}
+
+Theorem~\ref{thm:net} helps when $\Phi_0=O(n)$ and the first node functions are cheap. Both hold when the formula has few occurrences and they are spread evenly over the nodes.
+
+\begin{lemma}\label{lem:place}
+Let $K\ge2$, $\Delta\ge1$, and $n\ge K^2$, and put $D=\Delta+1$. Let $\Psi$ be a formula as in Theorem~\ref{thm:main}. In polynomial time, the nodes of the network of $\Psi$ can be partitioned into $K$ blocks such that each block has at most $2Dn/K$ wires inside it, and the merged network $N_0$, with its wires between blocks, has $\Phi(N_0)\le6Dn$.
+\end{lemma}
+
+\begin{proof}
+Every wire has its tail at a variable, and a variable has at most $\Delta$ occurrences and its own wire, so at most $D$ wires.
+
+\emph{Variables.} Put the variable $i$ into the block $i\bmod K$. A block holds at most $\lceil n/K\rceil\le n/K+1\le2n/K$ variables, since $n\ge K$, so it has at most $2Dn/K$ wires inside it.
+
+\emph{Clauses and own nodes.} Let $L(a,b)$ count the wires placed so far whose tail (a variable) lies in the block $a$ and whose head (a clause or an own node) lies in the block $b$. For each $a$, $\sum_bL(a,b)\le D(n/K+1)$ at all times, whatever the placement of the other nodes, because the block $a$ has at most $n/K+1$ variables with at most $D$ wires each. Go through the clauses and the own nodes in any order. Such a node has at most three wires; let $a_1,a_2,a_3$ be the blocks of their tails, with repetitions. Put the node into the block $b$ that minimizes $\sum_kL(a_k,b)$. Summed over all $K$ blocks $b$, this quantity is at most $3D(n/K+1)$, so its minimum is at most $3D(n/K+1)/K$. Placing the node raises $L(a,b)$ only for $a\in\{a_1,a_2,a_3\}$ and the chosen $b$, by at most $3$, and before that raise $L(a,b)$ was at most the minimum. So at the end every $L(a,b)\le3D(n/K+1)/K+3$.
+
+\emph{Potential.} For $a\ne b$, $w(a,b)=L(a,b)+L(b,a)\le6D(n/K+1)/K+6$, and $\sum_{a,b}w(a,b)$ is twice the number of wires between blocks, at most $2Dn$. So
+\[
+\Phi(N_0)^2=K^2\sum_{a,b}w(a,b)^2\le K^2\Bigl(\frac{6D(n+K)}{K^2}+6\Bigr)2Dn=12D^2n^2+12D^2nK+12DK^2n\le36D^2n^2,
+\]
+since $K\le K^2\le n$ and $D\ge1$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+If $\Psi$ has an empty clause, the answer is $0$. Put $D=\Delta+1$. Let $\ell\ge1$ be the least integer such that $20.4\,D\gamma^\ell+2D/K\le\varepsilon$ for $K=2^{2^\ell}$; it exists because the left side tends to $0$. The parameters $\ell$ and $K$ depend only on $\Delta$ and $\varepsilon$. If $n<K^2$, enumerate the $2^n<2^{K^2}$ assignments. Otherwise place the network of $\Psi$ by Lemma~\ref{lem:place}, and merge each block with equality tests: a wire inside a block becomes one bit summed inside the block function. By Lemma~\ref{lem:formula}, the merged network has $Z_=$ equal to the number of solutions. Orient every wire between blocks from the block with the smaller number to the larger, and apply Lemma~\ref{lem:flip}: the result is a network $N_0$ with difference marks and the same value. A node function of $N_0$ is a sum over at most $2^{2Dn/K}$ bits of products of node functions, so it is evaluated in time $2^{2Dn/K}$ times a polynomial. Theorem~\ref{thm:net} gives time $2^{K^2/3}$ times a constant, times a polynomial, times
+\[
+2^{3.4\gamma^\ell\cdot6Dn+2Dn/K}\le2^{\varepsilon n}.
+\]
+The values of the first node functions have $O(n)$ bits, and the formula has at most $\Delta n$ clauses, so the polynomial is a polynomial in $n$.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:eth}]
+The sparsification lemma~\cite{IPZ01} gives, for each $\varepsilon>0$, a number $\Delta$ and an algorithm that maps a 3-CNF $\varphi$ on $n$ variables to at most $2^{\varepsilon n}$ formulas on the same variables, with clauses of at most three literals and at most $\Delta$ occurrences of each variable, in time $2^{\varepsilon n}$ times a polynomial, such that the solutions of $\varphi$ are the union of their solutions. Count the solutions of each by Theorem~\ref{thm:main} with $\varepsilon$, and accept if one count is positive. The time is $2^{2\varepsilon n}$ times a constant and a polynomial in $|\varphi|$, and $n\le|\varphi|$ since the input declares its variables.
+\end{proof}
+
+\emph{The rate.} The proof fixes $\varepsilon$. If $\ell$ grows with $n$, so that $K_0^2=2^{2^{\ell+1}}$ is about $n/\log n$, then $\ell\approx\log_2\log_2n$ and $\gamma^\ell\approx(\log n)^{-0.068}$, since $\log_2\gamma\approx-0.068$; the exponent for fixed $\Delta$ becomes $O(n/(\log n)^{0.068})$. OpenAI and Claude reach $O(n/\sqrt{\log n})$ for fixed $\Delta$~\cite{OAI26,Cla26}, which corresponds to a factor $1/\sqrt2$ per level. The difference comes from the pieces: in Lemma~\ref{lem:phi} a rectangle contributes $(f^{\mathrm r})^2+(f^{\mathrm c})^2$, and the bound $1.82$ becomes $1$ when this sum is at most the $2(w_1^2+w_2^2)$ of the rectangle. Our two pieces cost about $(2t,1.8t)$ for $t=w_1=w_2$, while the pieces of~\cite[Appendix~B]{Cla26}, more of them per rectangle, have costs close to a circle of radius $2t$.
+
+\section{Formalization}\label{sec:formal}
+
+The Lean~4 development~\cite{Lean4,Mathlib} is the library \lean{DominantStrings} in the directory \texttt{lean/} of the repository \url{https://github.com/suquark/NotETHSimplified}. It uses the libraries \lean{TransposeBase} and \lean{SatBase} of that project for the word language, helpers for brute force, binomials and fields, the network of a formula, and the machine layer, and \lean{FormalizationKit} for resource bounds on the machine. The end statements for Theorem~\ref{thm:main} are defined in \lean{DominantStrings/Statements.lean}. The file \lean{DominantStrings/Audit.lean} checks by \lean{rfl} that the end theorems are these statements, and it reports that the theorems listed there depend only on the axioms \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}, or on a subset of them; the library contains no \lean{sorry}, and its modules were replayed by the kernel checker \lean{leanchecker}. A meta-program, \lean{DominantStrings/ClosureCheck.lean}, computes the closure of \lean{Machine.machine\_bounded} and counts no constant with a name containing \lean{sparseTree}, \lean{SparseState}, \lean{chooseSparseRule} or \lean{treeE}, the branching tree of the sparsification, nor any containing \lean{OnePigeonhole}, \lean{Chebyshev}, \lean{Fourier}, \lean{Hermite}, \lean{Matrix.det} or \lean{indow}. Table~\ref{tab:lean} maps the paper to the Lean declarations.
+
+\begin{table}[ht]
+\centering
+\small
+\resizebox{\textwidth}{!}{\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Paper} & \textbf{Lean declaration} & \textbf{Module} \\
+\midrule
+Lemma~\ref{lem:flip} & \lean{val\_flip} & \lean{Base} \\
+Lemma~\ref{lem:formula}, merging & \lean{BaseNet.valEq\_base}, \lean{BaseNet.val\_base}, \lean{cnf\_net\_main} & \lean{Base}, \lean{TransposeBase} \\
+Lemma~\ref{lem:dom} & \lean{Ppol\_add}, \lean{seed\_rows}, \lean{seed\_cols}, \lean{seed\_sum}, \lean{sum\_cheap}, \lean{dLen\_le} & \lean{Seed} \\
+Lemma~\ref{lem:step}, \eqref{index} & \lean{step\_val}, \lean{sum\_mk\_index}, \lean{sum\_pair\_prod} & \lean{Step}, \lean{Mark} \\
+Lemma~\ref{lem:phi} & \lean{dLen\_cheap\_le}, \lean{sq\_two\_widths}, \lean{potential\_two}, \lean{potential\_min} & \lean{Seed}, \lean{Potential} \\
+Theorem~\ref{thm:net} & \lean{chain\_val}, \lean{chainVal\_eq}, \lean{core\_spec} & \lean{Chain}, \lean{Pseudo.CoreSpec} \\
+Lemma~\ref{lem:place} & \lean{load\_table\_le}, \lean{psi\_table\_le\_all}, \lean{BaseNet.w0\_total} & \lean{Greedy}, \lean{Base} \\
+Theorem~\ref{thm:main} & \lean{Pseudo.Final.pseudo\_bounded}, \lean{Machine.machine\_bounded} & \lean{Pseudo.Bounded}, \lean{Machine.Bounded} \\
+Corollary~\ref{cor:eth} & \lean{Pseudo.Final.pseudo\_main}, \lean{Machine.not\_ETH} & \lean{Pseudo.Final}, \lean{Machine.FinalMain} \\
+\bottomrule
+\end{tabular}}
+\caption{Map from the paper to the Lean development. Names are in \lean{DominantStrings}, except \lean{cnf\_net\_main} in \lean{TransposeBase}.}\label{tab:lean}
+\end{table}
+
+\emph{The end statements.} The word language has addition, subtraction and multiplication modulo $2^{\mathsf w}$, division, remainder, powers of $2$, comparison, and bounded loops; its semantics gives the value of a program and the number of word operations. The theorem \lean{Pseudo.Final.pseudo\_bounded} states: for every bound $D$ and every $\varepsilon>0$ there are one program $\mathsf P$ and constants $C,b,c$ such that, for every $n$ and every formula $F$ with $n$ variables, clauses of at most three literals and at most $D$ occurrences of each variable, for every word size $\mathsf w\ge c(n+1)^3$ and every environment that continues below the bitset of $F$ and the number $n$, the value of $\mathsf P$ is nonzero exactly when $F$ is satisfiable, and the number of word operations is at most $C(n+1)^b2^{\varepsilon n}$. The program enumerates the assignments for $n\le K^2$ and runs one chain otherwise; it has no branching. The theorem \lean{Machine.machine\_bounded} compiles it: for every $D$ and $\varepsilon>0$ there are a primitive multitape machine, in the model of OpenAI's Lean development~\cite{OAIlean}, and constants such that for every formula $\varphi$ with clauses of at most three literals in which every variable occurs in at most $D$ clauses counted with their sign, the machine started on the fixed encoding of $\varphi$ halts with the correct answer within $C(|\varphi|+1)^d2^{\varepsilon n}$ steps, and every prefix of that run visits at most $C'(|\varphi|+1)^{d'}$ tape cells. The library also joins the same chain with the branching tree of \lean{SatBase} into \lean{Machine.not\_ETH}, the formal form of Corollary~\ref{cor:eth}; the sparsification lemma is proved there in its own form, and it is not part of this paper.
+
+\emph{Departures from the text.} Lean follows the text: the value with difference marks (\lean{val}), the crossing as the product of the marks of two bundles (\lean{cross}), the letters $P,Q,R$ and the special letter with their top and bottom functions (\lean{topL}, \lean{botL}), the dominant strings with the tie broken by the last letter (\lean{adm}), the two-part index (\lean{markOf}, \lean{letterCheap}), the index wires with the sign at the tail and the complement at the head (\lean{Lev.segT}), the orientation from the smaller node, and the first level built by Lemmas~\ref{lem:formula} and~\ref{lem:flip} (\lean{flipF}). The remaining differences are these. The pieces of a rectangle are multiplied by a fixed power of two, so that all node functions are integers, and the value of a chain is a power of two times the number of solutions (\lean{core\_spec}); the end theorems state the decision. A choice is encoded in $K'^4$ bits with a validity test. The network of a formula is the shared network of \lean{TransposeBase}; its clause functions allow clause sets that hold both signs of a variable and clauses of fewer than three literals, and Lean counts the occurrences of a variable as the clauses with $x_i$ plus the clauses with $\neg x_i$. The constants are Lean's own: the potential of the first level is bounded by $28((D+4)n)^2$ in place of $(6Dn)^2$, and \lean{exists\_rate} uses the rate $(477/500)^H$, with $100(477/500)^2\ge91$, and the ratio $21/40$ for the sum over the levels.
+
+\emph{What is not formalized.} Theorem~\ref{thm:net} is stated in Lean only as \lean{Pseudo.core\_spec}, for placed networks of formulas, in word operations, with its exponent as an unsummed sum; the value part, \lean{chain\_val}, holds for arbitrary symmetric weights. The constants $3.4$ and $6D$ of this text are computed by hand.
+
+\section*{Use of AI}
+The argument and the Lean proofs were developed in interactive sessions with Claude (Anthropic), building on the public manuscripts~\cite{OAI26,OD26,Cla26,Kin26}. The author is responsible for any errors.
+
+\begin{thebibliography}{IPZ01}
+\bibitem[Cla26]{Cla26} Claude (Anthropic). A $2^{o(n)}$ time algorithm for 3-SAT. Preprint, October 26, 2026. \url{https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/eth}.
+\bibitem[ETH26]{ETHblog} R.~Impagliazzo, R.~Paturi, and R.~Williams. ETH refutation: examination and discussion. Web site, October 2026. \url{https://ethdiscussion.blog/2026/10/26/eth-refutation-examination-and-discussion/}.
+\bibitem[IP01]{IP01} R.~Impagliazzo and R.~Paturi. On the complexity of $k$-SAT. \emph{J.\ Comput.\ System Sci.} 62(2):367--375, 2001.
+\bibitem[IPZ01]{IPZ01} R.~Impagliazzo, R.~Paturi, and F.~Zane. Which problems have strongly exponential complexity? \emph{J.\ Comput.\ System Sci.} 63(4):512--530, 2001.
+\bibitem[Kin26]{Kin26} S.~Kintali. A simplified proof of ETH is false. Manuscript, October 26, 2026. \url{https://shivakintali.github.io/papers/ETH.pdf}.
+\bibitem[MU21]{Lean4} L.~de Moura and S.~Ullrich. The Lean 4 theorem prover and programming language. In \emph{Proc.\ 28th CADE}, 2021.
+\bibitem[mC20]{Mathlib} The mathlib Community. The Lean mathematical library. In \emph{Proc.\ 9th ACM SIGPLAN CPP}, 2020.
+\bibitem[OAI26]{OAI26} OpenAI. The Exponential Time Hypothesis is false. Manuscript, October 17, 2026; revised October 25, 2026. \url{https://github.com/openai/math/blob/42907c9e999cc00d6abe7a50bfc1023250edd1b9/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf}.
+\bibitem[OAI26b]{OAIlean} OpenAI. Lean formalization accompanying ``The Exponential Time Hypothesis is false''. Repository, commit 4eaee87; see \texttt{lean/OAI/Algorithms/SubexponentialSAT/SqrtLogSpace/CompileSpace.lean}. \url{https://github.com/openai/math/tree/4eaee87548250b2682affda7d05d947c05554bae/lean}.
+\bibitem[O'D26]{OD26} R.~O'Donnell. Some exposition of ``The Exponential Time Hypothesis Is False''. Manuscript, October 30, 2026. \url{https://www.cs.cmu.edu/~odonnell/some_eth_false_exposition.pdf}.
+\bibitem[Zhu26]{Zhu26} S.~Zhuang. Uncrossing Wires for 3-SAT: A potential that closes the recursion. Preprint, October 31, 2026. \url{https://github.com/suquark/NotETHSimplified/tree/main/papers/uncrossing-wires}.
+\end{thebibliography}
+\end{document}

@@ -27,3 +27,6 @@ name = "UncrossingWires"
 
 [[lean_lib]]
 name = "OnePigeonhole"
+
+[[lean_lib]]
+name = "DominantStrings"

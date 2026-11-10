@@ -8,10 +8,13 @@
     lake build UncrossingWires
     lake env lean UncrossingWires/Audit.lean
     lake env lean UncrossingWires/ClosureCheck.lean
+    lake build DominantStrings
+    lake env lean DominantStrings/Audit.lean
+    lake env lean DominantStrings/ClosureCheck.lean
 
-This project is shared by the papers in `../papers`. `OnePigeonhole/` is the proof of `../papers/one-pigeonhole`, and Section 9 of that paper maps it to the text. `UncrossingWires/` is the proof of `../papers/uncrossing-wires`; see [`UncrossingWires/README.md`](UncrossingWires/README.md).
+This project is shared by the papers in `../papers`. `OnePigeonhole/` is the proof of `../papers/one-pigeonhole`, and Section 9 of that paper maps it to the text. `UncrossingWires/` is the proof of `../papers/uncrossing-wires`; see [`UncrossingWires/README.md`](UncrossingWires/README.md). `DominantStrings/` is the proof of `../papers/dominant-strings`; see [`DominantStrings/README.md`](DominantStrings/README.md).
 
-Both use three shared libraries. `TransposeBase` holds the word language, the network of a formula, the machine, the end statements in `TransposeBase/Statements.lean`, and the lower bounds `exact_degree`, `cut_prop` and `digit_cost` that the first paper cites. `SatBase` provides the normalization and the branching tree. `FormalizationKit` provides resource bounds on the machine. `Audit.lean` reports the axioms of the shared results that the papers cite.
+All use three shared libraries. `TransposeBase` holds the word language, the network of a formula, the machine, the end statements in `TransposeBase/Statements.lean`, and the lower bounds `exact_degree`, `cut_prop` and `digit_cost` that the first paper cites. `SatBase` provides the normalization and the branching tree. `FormalizationKit` provides resource bounds on the machine. `Audit.lean` reports the axioms of the shared results that the papers cite.
 
 ## How to read the statements
 
@@ -19,4 +22,4 @@ Both use three shared libraries. `TransposeBase` holds the word language, the ne
 
 ## Formalized and not formalized
 
-Section 9 of `../papers/one-pigeonhole/paper.pdf` and Section 8 of `../papers/uncrossing-wires/paper.pdf` map each paper to the Lean statements and list the differences.
+Section 9 of `../papers/one-pigeonhole/paper.pdf` and Section 8 of `../papers/uncrossing-wires/paper.pdf` and of `../papers/dominant-strings/paper.pdf` map each paper to the Lean statements and list the differences.

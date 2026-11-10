@@ -11,6 +11,8 @@ and what is not. The chain reaches a multitape machine for 3-SAT (`UncrossingWir
 cd ../../lean && lake exe cache get && lake build UncrossingWires TransposeBase && lake env lean UncrossingWires/Audit.lean && lake env lean UncrossingWires/ClosureCheck.lean
 ```
 
+The companion paper [Dominant Strings for 3-SAT](../dominant-strings) runs the same recursion with wires that carry differences of bits, and proves the case of few occurrences per variable without branching.
+
 The paper builds on Claude (Anthropic), *A 2^{o(n)} time algorithm for 3-SAT*; OpenAI, *The
 Exponential Time Hypothesis is false*; R. O'Donnell, *Some exposition of "The Exponential Time Hypothesis Is False"*; and S. Kintali, *A simplified proof of ETH is false*. The 3-SAT theorem
 is due to the first two.
